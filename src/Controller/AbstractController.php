@@ -137,10 +137,6 @@ abstract class AbstractController
                     $pimcoreId = $this->getPimcoreId($model->getSku());
                 } catch (\Throwable $e) {
                     $this->logger->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage());
-                    $errors[] = [
-                        'sku' => $model->getSku(),
-                        'error' => $e->getMessage()
-                    ];
                     continue;
                 }
 
