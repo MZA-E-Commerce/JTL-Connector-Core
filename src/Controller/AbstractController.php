@@ -114,6 +114,8 @@ abstract class AbstractController
      */
     public function push(AbstractModel ...$models): array
     {
+        $errors = [];
+
         foreach ($models as $i => $model) {
             // Check type
             if (!$model instanceof Product) {
@@ -135,6 +137,10 @@ abstract class AbstractController
                     $pimcoreId = $this->getPimcoreId($model->getSku());
                 } catch (\Throwable $e) {
                     $this->logger->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage());
+                    $errors[] = [
+                        'sku' => $model->getSku(),
+                        'error' => $e->getMessage()
+                    ];
                     continue;
                 }
 
@@ -145,11 +151,20 @@ abstract class AbstractController
             // Hook for the update
             try {
                 $this->updateModel($model);
+                $models[$i] = $model;
             } catch (\Throwable $e) {
                 $this->logger->error('Error in updateModel(): ' . $e->getMessage());
+                $errors[] = [
+                    'sku' => $model->getSku(),
+                    'error' => $e->getMessage()
+                ];
+                continue;
             }
+        }
 
-            $models[$i] = $model;
+        if (!empty($errors)) {
+            $errorMessage = 'Errors occurred while processing models: ' . json_encode($errors);
+            throw new \RuntimeException($errorMessage);
         }
 
         return $models;
@@ -245,7 +260,7 @@ abstract class AbstractController
             case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!
                 $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
                 // Prices
-                $postData['prices'] = $this->getPrices($product, true);
+                $postData['prices'] = $this->getPrices($product);
                 // Recommended retail price gross
                 $postData['uvpGross'] = round($product->getRecommendedRetailPrice(), 4, PHP_ROUND_HALF_UP);
                 // Recommended retail price net
@@ -254,15 +269,26 @@ abstract class AbstractController
                 $postData['taxRate'] = $product->getVat();
                 break;
         }
-
+#var_dump($postData);die;
         $this->logger->info($httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData));
 
         try {
+            #file_put_contents('/var/www/html/var/log/postData.log', json_encode($postData) . PHP_EOL, FILE_APPEND);
             $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
 
-            $statusCode = $response->getStatusCode();
-            $responseData = $response->toArray();
 
+            $statusCode = $response->getStatusCode();
+            if ($statusCode !== 200) {
+                $this->logger->error('Product updated failed in Pimcore (SKU: ' . $product->getSku() . ')');
+            }
+
+            $contentString = $response->getContent();
+            if (str_contains($contentString, '500 Internal Server')) {
+                $this->logger->error('Product updated failed (500 Internal Server) in Pimcore (SKU: ' . $product->getSku() . ')');
+                throw new \RuntimeException('Pimcore API error: 500 Internal Server Error');
+            }
+
+            $responseData = $response->toArray();
             if ($statusCode === 200 && isset($responseData['success']) && $responseData['success'] === true) {
                 $this->logger->info('Product updated successfully in Pimcore (SKU: ' . $product->getSku() . ')');
                 return;
@@ -271,7 +297,7 @@ abstract class AbstractController
             throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
 
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
-            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 500, $e);
         }
     }
 
@@ -283,10 +309,9 @@ abstract class AbstractController
 
     /**
      * @param Product $product
-     * @param bool $excludeRegular
      * @return array
      */
-    private function getPrices(Product $product, bool $excludeRegular = false): array
+    private function getPrices(Product $product): array
     {
         /**
          * $specialPrices = false - UPDATE_TYPE_PRODUCT_PRICE ("productPrice.push")
@@ -357,25 +382,23 @@ abstract class AbstractController
             self::PRICE_TYPE_SPECIAL => []
         ];
 
-        if ($excludeRegular === false) {
-            // 1) regular prices
-            foreach ($product->getPrices() as $priceModel) {
-                foreach ($priceModel->getItems() as $item) {
-                    if (empty($priceModel->getCustomerGroupId()->getEndpoint())) {
-                        $result[self::PRICE_TYPE_REGULAR][] = [
-                            'type' => self::PRICE_TYPE_RETAIL_NET,
-                            'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
-                            'priceNet' => $item->getNetPrice(),
-                            'quantity' => $item->getQuantity(),
-                        ];
-                    } else {
-                        $result[self::PRICE_TYPE_REGULAR][] = [
-                            'type' => self::PRICE_TYPE_REGULAR,
-                            'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
-                            'priceNet' => $item->getNetPrice(),
-                            'quantity' => $item->getQuantity(),
-                        ];
-                    }
+        // 1) regular prices
+        foreach ($product->getPrices() as $priceModel) {
+            foreach ($priceModel->getItems() as $item) {
+                if (empty($priceModel->getCustomerGroupId()->getEndpoint())) {
+                    $result[self::PRICE_TYPE_REGULAR][] = [
+                        'type' => self::PRICE_TYPE_RETAIL_NET,
+                        'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
+                        'priceNet' => $item->getNetPrice(),
+                        'quantity' => $item->getQuantity(),
+                    ];
+                } else {
+                    $result[self::PRICE_TYPE_REGULAR][] = [
+                        'type' => self::PRICE_TYPE_REGULAR,
+                        'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$priceModel->getCustomerGroupId()->getEndpoint()],
+                        'priceNet' => $item->getNetPrice(),
+                        'quantity' => $item->getQuantity(),
+                    ];
                 }
             }
         }

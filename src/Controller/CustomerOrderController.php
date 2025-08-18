@@ -37,7 +37,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $order = new CustomerOrder();
                 $order->setId($identity);
                 $order->setOrderNumber($orderData['orderNumber']);
-                $order->setLanguageIso('de');
+                $order->setLanguageIso('DE');
                 $order->setCurrencyIso($orderData['currencyIso']);
                 $order->setCreationDate(\DateTime::createFromFormat('U', $orderData['orderDateUnix']));
                 $order->setCustomerNote($orderData['customerComment']??'');
@@ -45,7 +45,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
                 // Shipping address
                 $shippingAddress = new CustomerOrderShippingAddress();
-                $shippingAddress->setCountryIso($orderData['delivery']['country']);
+                $shippingAddress->setCountryIso(!empty($orderData['delivery']['country']) ? $orderData['delivery']['country'] : 'DE');
                 $shippingAddress->setFirstName($orderData['delivery']['firstName']);
                 $shippingAddress->setLastName($orderData['delivery']['lastName']);
                 $shippingAddress->setCompany($orderData['delivery']['company']??'');
@@ -72,10 +72,15 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
                 // Items
                 foreach ($orderData['items'] as $item) {
+
                     $customerOrderItem = new CustomerOrderItem();
-                    $customerOrderItem->setId(new Identity($item['productId'], 0));
+
+                    // Please check Dropshipping Connector! We need JTL-ID and set it to
+                    $customerOrderItem->setProductId(new Identity($item['jtlId'], 0));
+                    #$customerOrderItem->setId(new Identity($item['productId'], 0));
                     $customerOrderItem->setSku($item['sku']);
                     $customerOrderItem->setName($item['name']);
+                    $customerOrderItem->setType(CustomerOrderItem::TYPE_PRODUCT);
                     $customerOrderItem->setQuantity($item['quantity']);
                     $customerOrderItem->setPriceGross($item['totalPrice']);
                     $customerOrderItem->setPrice($item['totalPriceNet']);
@@ -87,13 +92,20 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $order->setTotalSum($orderData['totalSum']);
                 $order->setTotalSumGross($orderData['totalSumGross']);
 
+                if (isset($orderData['salesRepresentative']) && !empty($orderData['salesRepresentative']['customerNumber'])) {
+                    $order->setShippingInfo('ClickAndCollect|' .
+                        $orderData['salesRepresentative']['customerNumber'] . '|' .
+                        $orderData['salesRepresentative']['companyName'] . '|' .
+                        $orderData['salesRepresentative']['id']
+                    );
+                }
+
                 $orders[] = $order;
             }
 
         } catch (\Throwable $e) {
             throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
         }
-
         return $orders;
     }
 
