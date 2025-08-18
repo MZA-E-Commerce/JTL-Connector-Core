@@ -376,6 +376,10 @@ abstract class AbstractController
         // 1) regular prices
         foreach ($product->getPrices() as $priceModel) {
             foreach ($priceModel->getItems() as $item) {
+                if (empty($item->getNetPrice())) {
+                    // Skip items with priceNet == 0
+                    continue;
+                }
                 if (empty($priceModel->getCustomerGroupId()->getEndpoint())) {
                     $result[self::PRICE_TYPE_REGULAR][] = [
                         'type' => self::PRICE_TYPE_RETAIL_NET,
@@ -399,6 +403,10 @@ abstract class AbstractController
             $from = $specialModel->getActiveFromDate()?->format('Y-m-d') ?? null;
             $until = $specialModel->getActiveUntilDate()?->format('Y-m-d') ?? null;
             foreach ($specialModel->getItems() as $item) {
+                if (empty($item->getPriceNet())) {
+                    // Skip items with priceNet == 0
+                    continue;
+                }
                 $result[self::PRICE_TYPE_SPECIAL][] = [
                     'type' => self::PRICE_TYPE_SPECIAL,
                     'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$item->getCustomerGroupId()->getEndpoint()],
