@@ -278,12 +278,6 @@ abstract class AbstractController
                 $this->logger->error('Product updated failed in Pimcore (SKU: ' . $product->getSku() . ')');
             }
 
-            $contentString = $response->getContent();
-            if (str_contains($contentString, '500 Internal Server')) {
-                $this->logger->error('Product updated failed (500 Internal Server) in Pimcore (SKU: ' . $product->getSku() . ')');
-                throw new \RuntimeException('Pimcore API error: 500 Internal Server Error');
-            }
-
             $responseData = $response->toArray();
             if ($statusCode === 200 && isset($responseData['success']) && $responseData['success'] === true) {
                 $this->logger->info('Product updated successfully in Pimcore (SKU: ' . $product->getSku() . ')');
@@ -293,7 +287,8 @@ abstract class AbstractController
             throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
 
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
-            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 500, $e);
+            $errorMessage = $e->getResponse()?->getContent(false);
+            throw new \RuntimeException($errorMessage, $e->getCode(), $e);
         }
     }
 
@@ -381,6 +376,10 @@ abstract class AbstractController
         // 1) regular prices
         foreach ($product->getPrices() as $priceModel) {
             foreach ($priceModel->getItems() as $item) {
+                if (empty($item->getNetPrice())) {
+                    // Skip items with priceNet == 0
+                    continue;
+                }
                 if (empty($priceModel->getCustomerGroupId()->getEndpoint())) {
                     $result[self::PRICE_TYPE_REGULAR][] = [
                         'type' => self::PRICE_TYPE_RETAIL_NET,
@@ -404,6 +403,10 @@ abstract class AbstractController
             $from = $specialModel->getActiveFromDate()?->format('Y-m-d') ?? null;
             $until = $specialModel->getActiveUntilDate()?->format('Y-m-d') ?? null;
             foreach ($specialModel->getItems() as $item) {
+                if (empty($item->getPriceNet())) {
+                    // Skip items with priceNet == 0
+                    continue;
+                }
                 $result[self::PRICE_TYPE_SPECIAL][] = [
                     'type' => self::PRICE_TYPE_SPECIAL,
                     'customerGroupId' => self::CUSTOMER_TYPE_MAPPINGS[$item->getCustomerGroupId()->getEndpoint()],
