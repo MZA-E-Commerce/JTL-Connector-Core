@@ -278,12 +278,6 @@ abstract class AbstractController
                 $this->logger->error('Product updated failed in Pimcore (SKU: ' . $product->getSku() . ')');
             }
 
-            $contentString = $response->getContent();
-            if (str_contains($contentString, '500 Internal Server')) {
-                $this->logger->error('Product updated failed (500 Internal Server) in Pimcore (SKU: ' . $product->getSku() . ')');
-                throw new \RuntimeException('Pimcore API error: 500 Internal Server Error');
-            }
-
             $responseData = $response->toArray();
             if ($statusCode === 200 && isset($responseData['success']) && $responseData['success'] === true) {
                 $this->logger->info('Product updated successfully in Pimcore (SKU: ' . $product->getSku() . ')');
@@ -293,7 +287,8 @@ abstract class AbstractController
             throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
 
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
-            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 500, $e);
+            $errorMessage = $e->getResponse()?->getContent(false);
+            throw new \RuntimeException($errorMessage, $e->getCode(), $e);
         }
     }
 
