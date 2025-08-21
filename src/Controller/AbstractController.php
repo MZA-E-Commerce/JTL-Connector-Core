@@ -254,7 +254,7 @@ abstract class AbstractController
                 // Prices
                 $postData['prices'] = $this->getPrices($product);
                 break;
-            case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!
+            case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!!
                 $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
                 // Prices
                 $postData['prices'] = $this->getPrices($product);
