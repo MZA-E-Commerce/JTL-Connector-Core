@@ -1,0 +1,401 @@
+{
+  "method": "product.push",
+  "params": [
+    {
+      "entityType": "Product",
+      "categories": [],
+      "configGroups": [],
+      "fileDownloads": [],
+      "i18ns": [
+        {
+          "measurementUnitName": null,
+          "unitName": null,
+          "deliveryStatus": null,
+          "productId": [
+            "",
+            9177
+          ],
+          "languageISO": "ger",
+          "name": "Badehose schwarz Motiv: SIMSON Größe: S",
+          "description": "",
+          "shortDescription": "",
+          "urlPath": "",
+          "metaDescription": "",
+          "titleTag": "",
+          "metaKeywords": ""
+        }
+      ],
+      "invisibilities": [],
+      "mediaFiles": [],
+      "prices": [
+        {
+          "customerId": [
+            "",
+            0
+          ],
+          "items": [
+            {
+              "productPriceId": [
+                "",
+                0
+              ],
+              "quantity": 0,
+              "netPrice": 8.40336134 // PIMCORE, KG: "MZA B2C" Feld: "Akt. Netto"
+            }
+          ],
+          "customerGroupId": [
+            "c2c6154f05b342d4b2da85e51ec805c9",
+            2
+          ],
+          "sku": "83152-B-S",
+          "vat": 19.0,
+          "id": [
+            "",
+            0
+          ],
+          "productId": [
+            "",
+            9177
+          ]
+        },
+        {
+          "customerId": [
+            "",
+            0
+          ],
+          "items": [
+            {
+              "productPriceId": [
+                "",
+                0
+              ],
+              "quantity": 0,
+              "netPrice": 8.40336134 // PIMCORE, KG: "MZA B2B" Feld: "Akt. Netto"
+            }
+          ],
+          "customerGroupId": [
+            "b1d7b4cbe4d846f0b323a9d840800177",
+            1
+          ],
+          "sku": "83152-B-S",
+          "vat": 19.0,
+          "id": [
+            "",
+            0
+          ],
+          "productId": [
+            "",
+            9177
+          ]
+        },
+        {
+          "customerId": [
+            "",
+            0
+          ],
+          "items": [
+            {
+              "productPriceId": [
+                "",
+                0
+              ],
+              "quantity": 0,
+              "netPrice": 8.40336134 // Artikelstamm, Feld: "Netto VK"
+            }
+          ],
+          "customerGroupId": [
+            "",
+            0
+          ],
+          "sku": "83152-B-S",
+          "vat": 19.0,
+          "id": [
+            "",
+            0
+          ],
+          "productId": [
+            "",
+            9177
+          ]
+        }
+      ],
+      "partsLists": [],
+      "attributes": [
+        {
+          "i18ns": [
+            {
+              "value": "{\"kArtikel\":9177,\"cArtNr\":\"83152-B-S\",\"fVKNetto\":8.4033613400000,\"fUVP\":10.0000000000000,\"cPreisliste\":\"N\",\"cAktiv\":\"Y\",\"nLagerbestand\":0.0000000000000,\"nMindestbestellmaenge\":0.0000000000000,\"cBarcode\":\"4056144088219\",\"cTopArtikel\":\"N\",\"cInet\":\"N\",\"cDelInet\":\" \",\"fGewicht\":0.0000000000000,\"cNeu\":\"Y\",\"cLagerArtikel\":\"N\",\"cTeilbar\":\"N\",\"cLagerAktiv\":\"Y\",\"cLagerKleinerNull\":\"Y\",\"nMidestbestand\":0.0000000000000,\"fEKNetto\":0.0000000000000,\"fEbayPreis\":0.0000000000000,\"cLagerVariation\":\"N\",\"nDelete\":0,\"dMod\":\"2025-08-19T17:45:41.82\",\"fPackeinheit\":1.0000000000000,\"nVPE\":0,\"fVPEWert\":0.0000000000000,\"cSuchbegriffe\":\"\",\"cHerkunftsland\":\"PK\",\"kSteuerklasse\":1,\"dErstelldatum\":\"2025-06-12T14:45:12.24\",\"nSort\":0,\"kVersandklasse\":1,\"fArtGewicht\":0.0000000000000,\"cHAN\":\"\",\"cISBN\":\"\",\"cASIN\":\"\",\"kEigenschaftKombi\":0,\"kVaterArtikel\":0,\"nIstVater\":0,\"nIstMindestbestand\":0,\"fAbnahmeintervall\":0.0000000000000,\"kStueckliste\":0,\"kWarengruppe\":0,\"cEPID\":\"\",\"nMHD\":0,\"nCharge\":0,\"nNichtBestellbar\":0,\"fAmazonVK\":0.0000000000000,\"nPufferTyp\":0,\"nPuffer\":0,\"nProzentualePreisStaffelAktiv\":0,\"nSeriennummernVerfolgung\":0,\"kHersteller\":0,\"kLieferStatus\":0,\"kMassEinheit\":0,\"fMassMenge\":0.0000000000000,\"kGrundPreisEinheit\":0,\"fGrundpreisMenge\":0.0000000000000,\"fBreite\":0.0000000000000,\"fHoehe\":0.0000000000000,\"fLaenge\":0.0000000000000,\"kVPEEinheit\":0,\"nLiefertageWennAusverkauft\":0,\"kVerkaufsEinheit\":0,\"nAutomatischeLiefertageberechnung\":0,\"nBearbeitungszeit\":0,\"fLetzterEK\":0.0000000000000,\"dLetzterEK\":\"2025-06-16T13:05:37.58\",\"kBenutzerLetzteAenderung\":1,\"nZulaufVerfuegbarMenge\":0.0000000000000,\"dNeuImSortiment\":\"2025-06-12T14:45:12.24\",\"nEbayAbgleich\":1,\"kZustand\":1,\"cJfsku\":\"\",\"nSonderTyp\":0,\"bRowversion\":\"AAAAAACI7vs=\",\"nNichtRabattfaehig\":0,\"cLabelNamen\":\"\",\"nIstTeilmengenArtikel\":0,\"nSeriennummernstatus\":0}",
+              "name": "ÄnderungArtikelstamm",
+              "languageISO": "ger",
+              "productAttrId": [
+                "",
+                30183
+              ]
+            }
+          ],
+          "isTranslated": false,
+          "isCustomProperty": true,
+          "type": "string",
+          "id": [
+            "",
+            30183
+          ],
+          "productId": [
+            "",
+            9177
+          ]
+        },
+        {
+          "i18ns": [
+            {
+              "value": "\r\n{\"kArtikel\":9177,\"kSprache\":1,\"kPlattform\":1,\"kShop\":0,\"cName\":\"Badehose schwarz Motiv: SIMSON Größe: S\",\"cBeschreibung\":\"\",\"cKurzBeschreibung\":\"\",\"cUrlPfad\":\"\",\"cMetaDescription\":\"\",\"cTitleTag\":\"\",\"cMetaKeywords\":\"\",\"bRowversion\":\"AAAAAAAoTHo=\"}\r\n ",
+              "name": "ÄnderungBeschreibung",
+              "languageISO": "ger",
+              "productAttrId": [
+                "",
+                30184
+              ]
+            }
+          ],
+          "isTranslated": false,
+          "isCustomProperty": true,
+          "type": "string",
+          "id": [
+            "",
+            30184
+          ],
+          "productId": [
+            "",
+            9177
+          ]
+        },
+        {
+          "i18ns": [
+            {
+              "value": "\r\n{\"kArtikel\":9177,\"nAktiv\":1,\"dStart\":\"2025-08-18T00:00:00\",\"dEnde\":\"2025-10-31T23:59:59\",\"kKundenGruppe\":1,\"fNettoPreis\":9.0000000000000,\"cName\":\"MZA B2B\",\"fRabatt\":0.0000000000000},{\"kArtikel\":9177,\"nAktiv\":1,\"dStart\":\"2025-08-18T00:00:00\",\"dEnde\":\"2025-10-31T23:59:59\",\"kKundenGruppe\":2,\"fNettoPreis\":8.0000000000000,\"cName\":\"MZA B2C\",\"fRabatt\":0.0000000000000}\r\n ",
+              "name": "ÄnderungSonderpreis",
+              "languageISO": "ger",
+              "productAttrId": [
+                "",
+                30185
+              ]
+            }
+          ],
+          "isTranslated": false,
+          "isCustomProperty": true,
+          "type": "string",
+          "id": [
+            "",
+            30185
+          ],
+          "productId": [
+            "",
+            9177
+          ]
+        },
+        {
+          "i18ns": [
+            {
+              "value": "[{\"Pfad\":\"Bekleidung -> Badehosen\"}]\r\n ",
+              "name": "ÄnderungKategorie",
+              "languageISO": "ger",
+              "productAttrId": [
+                "",
+                30186
+              ]
+            }
+          ],
+          "isTranslated": false,
+          "isCustomProperty": true,
+          "type": "string",
+          "id": [
+            "",
+            30186
+          ],
+          "productId": [
+            "",
+            9177
+          ]
+        }
+      ],
+      "specialPrices": [
+        {
+          "items": [
+            {
+              "customerGroupId": [
+                "b1d7b4cbe4d846f0b323a9d840800177",
+                1
+              ],
+              "productSpecialPriceId": [
+                "",
+                1
+              ],
+              "priceNet": 9.0 // Sonderpreis - PIMCORE, KG: "MZA B2B" Feld: "Sonderpreis netto"
+            },
+            {
+              "customerGroupId": [
+                "c2c6154f05b342d4b2da85e51ec805c9",
+                2
+              ],
+              "productSpecialPriceId": [
+                "",
+                1
+              ],
+              "priceNet": 8.0 // Sonderpreis - PIMCORE, KG: "MZA B2C" Feld: "Sonderpreis netto"
+            }
+          ],
+          "id": [
+            "",
+            1
+          ],
+          "productId": [
+            "",
+            9177
+          ],
+          "isActive": true,
+          "activeFromDate": "2025-08-18T00:00:00Z", // Sonderpreis ab xx.xx.xxxx
+          "stockLimit": 0,
+          "activeUntilDate": "2025-10-31T23:59:59Z", // Sonderpreis bis xx.xx.xxxx
+          "considerDateLimit": true,
+          "considerStockLimit": false
+        }
+      ],
+      "specifics": [],
+      "warehouseInfo": [
+        {
+          "inflowQuantity": 0.0,
+          "productId": [
+            "",
+            9177
+          ],
+          "warehouseId": [
+            "",
+            1
+          ],
+          "stockLevel": 81.0
+        }
+      ],
+      "variations": [],
+      "checksums": [],
+      "varCombinations": [],
+      "customerGroupPackagingQuantities": [],
+      "taxRates": [
+        {
+          "id": [
+            "",
+            13
+          ],
+          "rate": 19.0000000000000,
+          "countryIso": "DE"
+        }
+      ],
+      "stockLevel": {
+        "productId": [
+          "",
+          9177
+        ],
+        "stockLevel": 81.0,
+        "sku": null
+      },
+      "supplierStockLevel": 0.0,
+      "vat": 19.0,
+      "basePriceFactor": 0.0,
+      "supplierDeliveryTime": 0,
+      "measurementUnitCode": "",
+      "basePriceUnitCode": "",
+      "basePriceUnitName": "",
+      "minBestBeforeDate": null,
+      "manufacturer": null,
+      "id": [
+        "",
+        9177
+      ],
+      "sku": "83152-B-S",
+      "recommendedRetailPrice": 8.4033613445378137, // 10.00€ UVP (brutto) / 1.19 (19% MwSt) = 8.4033613445378137€ (netto)
+      "note": "",
+      "isActive": true,
+      "minimumOrderQuantity": 0.0,
+      "ean": "4056144088219",
+      "isTopProduct": false,
+      "shippingWeight": 0.0,
+      "isNewProduct": true,
+      "isSerialNumber": false,
+      "isDivisible": false,
+      "considerStock": true,
+      "permitNegativeStock": false,
+      "minimumQuantity": 0.0,
+      "purchasePrice": 0.0,
+      "considerVariationStock": false,
+      "modified": "2025-08-19T17:45:41Z",
+      "considerBasePrice": false,
+      "basePriceDivisor": 0.0,
+      "keywords": "",
+      "taric": "",
+      "originCountry": "PK",
+      "taxClassId": [
+        "",
+        1
+      ],
+      "creationDate": "2025-06-12T14:45:12Z",
+      "availableFrom": null,
+      "sort": 0,
+      "shippingClassId": [
+        "",
+        1
+      ],
+      "productWeight": 0.0,
+      "manufacturerNumber": "",
+      "serialNumber": "",
+      "isbn": "",
+      "unNumber": "",
+      "hazardIdNumber": "",
+      "asin": "",
+      "masterProductId": [
+        "",
+        0
+      ],
+      "isMasterProduct": false,
+      "packagingQuantity": 0.0,
+      "partsListId": [
+        "",
+        0
+      ],
+      "upc": "",
+      "productTypeId": [
+        "",
+        0
+      ],
+      "epid": "",
+      "isBestBefore": false,
+      "isBatch": false,
+      "manufacturerId": [
+        "",
+        0
+      ],
+      "measurementUnitId": [
+        "",
+        0
+      ],
+      "measurementQuantity": 0.0,
+      "basePriceUnitId": [
+        "",
+        0
+      ],
+      "basePriceQuantity": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "length": 0.0,
+      "unitId": [
+        "",
+        0
+      ],
+      "nextAvailableInflowDate": null,
+      "additionalHandlingTime": 0,
+      "nextAvailableInflowQuantity": 0.0,
+      "newReleaseDate": "2025-06-12T14:45:12Z",
+      "discountable": true
+    }
+  ],
+  "jtlrpc": "2.0",
+  "id": "c361f232d300406d8ca72340321b67e9"
+}

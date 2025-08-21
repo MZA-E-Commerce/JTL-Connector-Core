@@ -327,7 +327,7 @@ class Application
     {
         $jtlRpc = Validate::string($this->httpRequest->get('jtlrpc', ''));
 
-        #file_put_contents('/home/www/p689712/html/jtl-connector-pimcore/var/log/rpc.log', $jtlRpc . PHP_EOL . PHP_EOL, FILE_APPEND);
+        #file_put_contents('/var/www/html/var/log/rpc.log', $jtlRpc . PHP_EOL . PHP_EOL, FILE_APPEND);
 
         $this->httpResponse->setLogger($this->loggerService->get(LoggerService::CHANNEL_RPC));
         $this->eventDispatcher->addSubscriber(new RequestParamsTransformSubscriber());

@@ -1,0 +1,98 @@
+// Beim Ändern von "Indiv, VKNetto" wird ein productPrice.push-Request gesendet.
+{
+  "method": "product_price.push",
+  "params": [
+    {
+      "customerId": [
+        "",
+        0
+      ],
+      "items": [
+        {
+          "productPriceId": [
+            "",
+            1003
+          ],
+          "quantity": 0,
+          "netPrice": 4.0 // PIMCORE, KG: MZA B2C, Feld: Indiv. VKNetto"
+        }
+      ],
+      "customerGroupId": [
+        "c2c6154f05b342d4b2da85e51ec805c9",
+        2
+      ],
+      "sku": "83152-B-S",
+      "vat": 19.0,
+      "id": [
+        "",
+        1003
+      ],
+      "productId": [
+        "",
+        9177
+      ]
+    },
+    {
+      "customerId": [
+        "",
+        0
+      ],
+      "items": [
+        {
+          "productPriceId": [
+            "",
+            1002
+          ],
+          "quantity": 0,
+          "netPrice": 3.0 // PIMCORE, KG: MZA B2B, Feld: Indiv. VKNetto"
+        }
+      ],
+      "customerGroupId": [
+        "b1d7b4cbe4d846f0b323a9d840800177",
+        1
+      ],
+      "sku": "83152-B-S",
+      "vat": 19.0,
+      "id": [
+        "",
+        1002
+      ],
+      "productId": [
+        "",
+        9177
+      ]
+    },
+    {
+      "customerId": [
+        "",
+        0
+      ],
+      "items": [
+        {
+          "productPriceId": [
+            "",
+            0
+          ],
+          "quantity": 0,
+          "netPrice": 8.40336134 // Stammdaten, Feld: "Netto-VK"
+        }
+      ],
+      "customerGroupId": [
+        "",
+        0
+      ],
+      "sku": "83152-B-S",
+      "vat": 19.0,
+      "id": [
+        "",
+        0
+      ],
+      "productId": [
+        "",
+        9177
+      ]
+    }
+  ],
+  "jtlrpc": "2.0",
+  "id": "1221bcfb147c42d7a3ff25ecab4a650c"
+}
