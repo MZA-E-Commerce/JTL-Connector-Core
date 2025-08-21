@@ -240,7 +240,8 @@ abstract class AbstractController
 
         // Set id of Pimcore product
         $postData = [
-            'id' => $product->getId()->getEndpoint()
+            'id' => $product->getId()->getEndpoint(),
+            'jtlId' => (string)$product->getId()->getHost()
         ];
 
         switch ($type) {
@@ -257,15 +258,15 @@ abstract class AbstractController
                 $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
                 // Prices
                 $postData['prices'] = $this->getPrices($product);
-                // Recommended retail price gross
-                $postData['uvpGross'] = round($product->getRecommendedRetailPrice(), 4, PHP_ROUND_HALF_UP);
                 // Recommended retail price net
-                $postData['uvpNet'] = round($product->getRecommendedRetailPrice() * (1 + ($product->getVat() / 100)), 4, PHP_ROUND_HALF_UP);
+                $postData['uvpNet'] = $product->getRecommendedRetailPrice();
+                // Recommended retail price gross
+                $postData['uvpGross'] = round($product->getRecommendedRetailPrice() * (1 + $product->getVat() / 100), 4);
                 // Tax rate
                 $postData['taxRate'] = $product->getVat();
                 break;
         }
-#var_dump($postData);die;
+
         $this->logger->info($httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData));
 
         try {
@@ -287,7 +288,11 @@ abstract class AbstractController
             throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
 
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
-            $errorMessage = $e->getResponse()?->getContent(false);
+            if (method_exists($e, 'getResponse') && $e->getResponse() instanceof \Symfony\Contracts\HttpClient\ResponseInterface) {
+                $errorMessage = $e->getResponse()?->getContent(false);
+            } else {
+                $errorMessage = $e->getMessage();
+            }
             throw new \RuntimeException($errorMessage, $e->getCode(), $e);
         }
     }
