@@ -31,6 +31,11 @@ class CustomerOrderController extends AbstractController implements PullInterfac
             }
 
             foreach ($data['orders'] as $orderData) {
+
+                if (empty($orderData['customer']['id'])) {
+                    var_dump($orderData);die;
+                }
+
                 $email = $orderData['customer']['email'];
 
                 $identity = new Identity($orderData['id'], 0);
@@ -46,32 +51,41 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 // Shipping address
                 $shippingAddress = new CustomerOrderShippingAddress();
                 $shippingAddress->setCountryIso(!empty($orderData['delivery']['country']) ? $orderData['delivery']['country'] : 'DE');
-                $shippingAddress->setFirstName($orderData['delivery']['firstName']);
-                $shippingAddress->setLastName($orderData['delivery']['lastName']);
-                $shippingAddress->setCompany($orderData['delivery']['company']??'');
-                $shippingAddress->setExtraAddressLine($orderData['delivery']['extraAddressLine']??'');
-                $shippingAddress->setCity($orderData['delivery']['city']);
-                $shippingAddress->setStreet($orderData['delivery']['street']);
-                $shippingAddress->setZipCode($orderData['delivery']['zip']);
+                $shippingAddress->setFirstName(!empty($orderData['delivery']['firstName']) ? $orderData['delivery']['firstName'] : 'n.a.');
+                $shippingAddress->setLastName(!empty($orderData['delivery']['lastName']) ? $orderData['delivery']['lastName'] : 'n.a.');
+                $shippingAddress->setCompany(!empty($orderData['delivery']['company']) ? $orderData['delivery']['company'] : '');
+                $shippingAddress->setExtraAddressLine(!empty($orderData['delivery']['extraAddressLine']) ? $orderData['delivery']['extraAddressLine'] : '');
+                $shippingAddress->setCity(!empty($orderData['delivery']['city']) ? $orderData['delivery']['city'] : 'n.a.');
+                $shippingAddress->setStreet(!empty($orderData['delivery']['street']) ? $orderData['delivery']['street'] : 'n.a.');
+                $shippingAddress->setZipCode(!empty($orderData['delivery']['zip']) ? $orderData['delivery']['zip'] : '00000');
                 $shippingAddress->setEMail($email);
                 $shippingAddress->setCustomerId(new Identity($orderData['customer']['id']??'', 0));
                 $order->setShippingAddress($shippingAddress);
 
                 // Billing address
                 $billingAddress = new CustomerOrderBillingAddress();
-                $billingAddress->setCountryIso($orderData['customer']['country']);
-                $billingAddress->setFirstName($orderData['customer']['firstName']);
-                $billingAddress->setLastName($orderData['customer']['lastName']);
-                $billingAddress->setCompany($orderData['customer']['company']??'');
-                $billingAddress->setCity($orderData['customer']['city']);
-                $billingAddress->setStreet($orderData['customer']['street']);
-                $billingAddress->setExtraAddressLine($orderData['customer']['extraAddressLine']??'');
-                $billingAddress->setZipCode($orderData['customer']['zip']);
+                $billingAddress->setCountryIso(!empty($orderData['customer']['country']) ? $orderData['customer']['country'] : 'DE');
+                $billingAddress->setFirstName(!empty($orderData['customer']['firstName']) ? $orderData['customer']['firstName'] : 'n.a.');
+                $billingAddress->setLastName(!empty($orderData['customer']['lastName']) ? $orderData['customer']['lastName'] : 'n.a.');
+                $billingAddress->setCompany(!empty($orderData['customer']['company']) ? $orderData['customer']['company'] : '');
+                $billingAddress->setCity(!empty($orderData['customer']['city']) ? $orderData['customer']['city'] : 'n.a.');
+                $billingAddress->setStreet(!empty($orderData['customer']['street']) ? $orderData['customer']['street'] : 'n.a.');
+                $billingAddress->setExtraAddressLine(!empty($orderData['customer']['extraAddressLine']) ? $orderData['customer']['extraAddressLine'] : '');
+                $billingAddress->setZipCode(!empty($orderData['customer']['zip']) ? $orderData['customer']['zip'] : '00000');
                 $billingAddress->setEMail($email);
                 $order->setBillingAddress($billingAddress);
 
+                // ToDo:
+                // 1. Versandart "Click & Collect" (Andreas fragen) -> Versandart in WaWi auf "Abholung" setzen
+                // 2. Händlernummer als Auftragsmerkmal setzen
+
                 // Items
                 foreach ($orderData['items'] as $item) {
+
+                    if (empty($item['jtlId'])) {
+                        $this->logger->error('Pimcore getOrders error! Order item without JTL-ID! (' . $item['name'] . ' SKU: '.$item['sku'] . ' Order#: ' . $orderData['orderNumber']);
+                        continue;
+                    }
 
                     $customerOrderItem = new CustomerOrderItem();
 
