@@ -31,11 +31,17 @@ abstract class AbstractController
     public const CUSTOMER_TYPE_B2C = 'c2c6154f05b342d4b2da85e51ec805c9';
 
     /**
+     * @var string
+     */
+    public const CUSTOMER_TYPE_B2B_DROPSHIPPING = '323ab1d7bf0b80017719d8404cbe4d46';
+
+    /**
      * @var array
      */
     public const CUSTOMER_TYPE_MAPPINGS = [
         self::CUSTOMER_TYPE_B2B => 'B2B',
         self::CUSTOMER_TYPE_B2C => 'B2C',
+        self::CUSTOMER_TYPE_B2B_DROPSHIPPING => 'B2B-DS',
         '' => 'CUSTOMER_TYPE_NOT_SET'
     ];
 
@@ -256,12 +262,35 @@ abstract class AbstractController
                 break;
             case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!!
                 $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
+
+                /*
+                 * Hinweis: Der UVP für B2C Endkunden entspricht dem Feld "indiv. Netto" vom Dropshipping Händler (MZA B2B-DS)
+                 * Später werden indiv. Netto-Preise auch für B2C Kunden unterstützt, welche in den Feldern unter dem PIMCORE Tab in der WaWi zu finden sind.
+                 */
+
+            #print_r($product->getPrices());
+            #print_r($product->getSpecialPrices());
+            #print_r($product->getPurchasePrice());
+            #print_r($product->getRecommendedRetailPrice());
+
+            #die();
+
+                //
+                $priceB2CUvpNet = 0;
+                $postData['prices']['B2C']['UPE'] = $priceB2CUvpNet;
+                $postData['prices']['B2C']['special'] = [];
+                $postData['prices']['B2B']['UPE'] = null;
+                $postData['prices']['B2B']['special'] = [];
+
+                /*
                 // Prices
                 $postData['prices'] = $this->getPrices($product);
                 // Recommended retail price net
                 $postData['uvpNet'] = $product->getRecommendedRetailPrice();
                 // Recommended retail price gross
                 $postData['uvpGross'] = round($product->getRecommendedRetailPrice() * (1 + $product->getVat() / 100), 4);
+                */
+
                 // Tax rate
                 $postData['taxRate'] = $product->getVat();
                 break;
