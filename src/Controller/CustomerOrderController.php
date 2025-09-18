@@ -32,10 +32,6 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
             foreach ($data['orders'] as $orderData) {
 
-                if (empty($orderData['customer']['id'])) {
-                    var_dump($orderData);die;
-                }
-
                 $email = $orderData['customer']['email'];
 
                 $identity = new Identity($orderData['id'], 0);
@@ -56,7 +52,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $shippingAddress->setCompany(!empty($orderData['delivery']['company']) ? $orderData['delivery']['company'] : '');
                 $shippingAddress->setExtraAddressLine(!empty($orderData['delivery']['extraAddressLine']) ? $orderData['delivery']['extraAddressLine'] : '');
                 $shippingAddress->setCity(!empty($orderData['delivery']['city']) ? $orderData['delivery']['city'] : 'n.a.');
-                $shippingAddress->setStreet(!empty($orderData['delivery']['street']) ? $orderData['delivery']['street'] : 'n.a.');
+                $shippingAddress->setStreet(!empty($orderData['delivery']['street']) ? ($orderData['delivery']['street'] . ' ' . $orderData['delivery']['houseNumber']) : 'n.a.');
                 $shippingAddress->setZipCode(!empty($orderData['delivery']['zip']) ? $orderData['delivery']['zip'] : '00000');
                 $shippingAddress->setEMail($email);
                 $shippingAddress->setCustomerId(new Identity($orderData['customer']['id']??'', 0));
@@ -69,7 +65,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $billingAddress->setLastName(!empty($orderData['customer']['lastName']) ? $orderData['customer']['lastName'] : 'n.a.');
                 $billingAddress->setCompany(!empty($orderData['customer']['company']) ? $orderData['customer']['company'] : '');
                 $billingAddress->setCity(!empty($orderData['customer']['city']) ? $orderData['customer']['city'] : 'n.a.');
-                $billingAddress->setStreet(!empty($orderData['customer']['street']) ? $orderData['customer']['street'] : 'n.a.');
+                $billingAddress->setStreet(!empty($orderData['customer']['street']) ? ($orderData['customer']['street'] . ' ' . $orderData['customer']['houseNumber']) : 'n.a.');
                 $billingAddress->setExtraAddressLine(!empty($orderData['customer']['extraAddressLine']) ? $orderData['customer']['extraAddressLine'] : '');
                 $billingAddress->setZipCode(!empty($orderData['customer']['zip']) ? $orderData['customer']['zip'] : '00000');
                 $billingAddress->setEMail($email);
