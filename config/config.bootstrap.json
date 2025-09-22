@@ -1,15 +1,19 @@
 {
+  "log": {
+    "level": "debug"
+  },
   "db": {
     "host": "jtl-connector-db",
     "name": "jtl-connector",
     "username": "jtl-connector",
     "password": "jtl-connector"
   },
-  "token": "1234567890",
+  "token": "xxx",
+  "useGrossPrices": false,
   "pimcore": {
     "api": {
-      "url": "http://mza-nginx/api/jtl/connector",
-      "key": "1234567890",
+      "url": "http://mza2-nginx/api/jtl/connector",
+      "key": "xxx",
       "auth": {
         "username": "jtl-connector",
         "password": "jtl-connector"
