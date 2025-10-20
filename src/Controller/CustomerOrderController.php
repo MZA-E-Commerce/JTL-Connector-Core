@@ -32,7 +32,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
             foreach ($data['orders'] as $orderData) {
 
-                $email = $orderData['customer']['email'];
+                $email = $orderData['customer']['email']??'';
 
                 $identity = new Identity($orderData['id'], 0);
                 $order = new CustomerOrder();

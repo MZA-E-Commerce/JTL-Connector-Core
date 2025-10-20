@@ -50,7 +50,7 @@ class CustomerController extends AbstractController implements PullInterface
                 $jtlCustomer->setZipCode($customer['zip']);
                 $jtlCustomer->setCity($customer['city']);
                 $jtlCustomer->setPhone($customer['phone']??'');
-                $jtlCustomer->setCountryIso($customer['countryIso']??'DE');
+                $jtlCustomer->setCountryIso($customer['country']??'DE');
                 $jtlCustomer->setHasNewsletterSubscription($customer['newsletter']??false);
                 $result[] = $jtlCustomer;
             }
