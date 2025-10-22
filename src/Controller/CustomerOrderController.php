@@ -7,6 +7,7 @@ use Jtl\Connector\Core\Model\CustomerOrderBillingAddress;
 use Jtl\Connector\Core\Model\CustomerOrderItem;
 use Jtl\Connector\Core\Model\CustomerOrderShippingAddress;
 use Jtl\Connector\Core\Model\Identity;
+use Jtl\Connector\Core\Model\KeyValueAttribute;
 use Jtl\Connector\Core\Model\Product;
 use Jtl\Connector\Core\Model\QueryFilter;
 
@@ -32,28 +33,56 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
             foreach ($data['orders'] as $orderData) {
 
-                $email = $orderData['customer']['email']??'';
+                $items = $orderData['items'] ?? [];
+                if (empty($items)) {
+                    $this->logger->error('No items found for order: ' . $orderData['orderNumber']);
+                    continue;
+                }
 
-                $identity = new Identity($orderData['id'], 0);
+                $identity = new Identity((string)$orderData['pimId'], 0);
                 $order = new CustomerOrder();
                 $order->setId($identity);
+
+                $order->setLanguageIso('de');
+
+                $email = $orderData['customer']['email']??'';
+
                 $order->setOrderNumber($orderData['orderNumber']);
-                $order->setLanguageIso('DE');
-                $order->setCurrencyIso($orderData['currencyIso']);
+                $setOrderCustomerNumber = $this->config->get('setOrderCustomerNumber');
+                if ($setOrderCustomerNumber) {
+                    $order->setCustomerId(new Identity($orderData['customer']['id']??'', 0));
+                }
+
+                $attribute = new KeyValueAttribute();
+                $attribute->setKey('externeAuftragsnummer'); // oder 'order_number', 'order_id'
+                $attribute->setValue($orderData['orderNumber']);
+                $order->addAttribute($attribute);
+
+                $order->setLanguageIso('de');
+                $order->setCurrencyIso($orderData['currencyIso']?? 'EUR');
                 $order->setCreationDate(\DateTime::createFromFormat('U', $orderData['orderDateUnix']));
-                $order->setCustomerNote($orderData['customerComment']??'');
-                $order->setNote('');
+
+                $order->setCustomerNote($orderData['customerComment'] ?? '');
+
+                $attributeCustomerGroup = new KeyValueAttribute();
+                $attributeCustomerGroup->setKey('customerGroup');
+                $attributeCustomerGroup->setValue($orderData['customer']['tenantJtl']);
+                $order->addAttribute($attributeCustomerGroup);
+
 
                 // Shipping address
+                $shippingStreet = !empty($orderData['delivery']['street']) ? $orderData['delivery']['street'] : '';
+                $shippingHouseNumber = !empty($orderData['delivery']['houseNumber']) ? ' ' . $orderData['delivery']['houseNumber'] : '';
+                $shippingStreetWithHouseNumber = $shippingStreet . $shippingHouseNumber;
                 $shippingAddress = new CustomerOrderShippingAddress();
                 $shippingAddress->setCountryIso(!empty($orderData['delivery']['country']) ? $orderData['delivery']['country'] : 'DE');
-                $shippingAddress->setFirstName(!empty($orderData['delivery']['firstName']) ? $orderData['delivery']['firstName'] : 'n.a.');
-                $shippingAddress->setLastName(!empty($orderData['delivery']['lastName']) ? $orderData['delivery']['lastName'] : 'n.a.');
+                $shippingAddress->setFirstName(!empty($orderData['delivery']['firstName']) ? $orderData['delivery']['firstName'] : '');
+                $shippingAddress->setLastName(!empty($orderData['delivery']['lastName']) ? $orderData['delivery']['lastName'] : '');
                 $shippingAddress->setCompany(!empty($orderData['delivery']['company']) ? $orderData['delivery']['company'] : '');
-                $shippingAddress->setExtraAddressLine(!empty($orderData['delivery']['extraAddressLine']) ? $orderData['delivery']['extraAddressLine'] : '');
-                $shippingAddress->setCity(!empty($orderData['delivery']['city']) ? $orderData['delivery']['city'] : 'n.a.');
-                $shippingAddress->setStreet(!empty($orderData['delivery']['street']) ? ($orderData['delivery']['street'] . ' ' . $orderData['delivery']['houseNumber']) : 'n.a.');
-                $shippingAddress->setZipCode(!empty($orderData['delivery']['zip']) ? $orderData['delivery']['zip'] : '00000');
+                //$shippingAddress->setExtraAddressLine(!empty($orderData['delivery']['extraAddressLine']) ? $orderData['delivery']['extraAddressLine'] : '');
+                $shippingAddress->setCity(!empty($orderData['delivery']['city']) ? $orderData['delivery']['city'] : '');
+                $shippingAddress->setStreet($shippingStreetWithHouseNumber);
+                $shippingAddress->setZipCode(!empty($orderData['delivery']['zip']) ? $orderData['delivery']['zip'] : '');
                 $shippingAddress->setEMail($email);
                 $shippingAddress->setCustomerId(new Identity($orderData['customer']['id']??'', 0));
                 $order->setShippingAddress($shippingAddress);

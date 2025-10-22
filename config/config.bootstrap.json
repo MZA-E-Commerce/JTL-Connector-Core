@@ -10,6 +10,7 @@
   },
   "token": "xxx",
   "useGrossPrices": false,
+  "setOrderCustomerNumber": false,
   "pimcore": {
     "api": {
       "url": "http://mza2-nginx/api/jtl/connector",
