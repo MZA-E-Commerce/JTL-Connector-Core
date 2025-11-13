@@ -39,6 +39,11 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     continue;
                 }
 
+                $isClickAndCollect = false;
+                if (isset($orderData['isClickAndCollect']) && $orderData['isClickAndCollect'] === true) {
+                    $isClickAndCollect = true;
+                }
+
                 $identity = new Identity((string)$orderData['pimId'], 0);
                 $order = new CustomerOrder();
                 $order->setId($identity);
@@ -69,6 +74,25 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $attributeCustomerGroup->setValue($orderData['customer']['tenantJtl']);
                 $order->addAttribute($attributeCustomerGroup);
 
+                if (!empty($orderData['idClickCollect'])) {
+                    $attributeIdClickCollect = new KeyValueAttribute();
+                    $attributeIdClickCollect->setKey('idClickCollect');
+                    $attributeIdClickCollect->setValue($orderData['idClickCollect']);
+                    $order->addAttribute($attributeIdClickCollect);
+                }
+                if (!empty($orderData['idRegionalprovision'])) {
+                    $attributeIdRegionalprovision = new KeyValueAttribute();
+                    $attributeIdRegionalprovision->setKey('idRegionalprovision');
+                    $attributeIdRegionalprovision->setValue($orderData['idRegionalprovision']);
+                    $order->addAttribute($attributeIdRegionalprovision);
+                }
+
+                if (!empty($orderData['delivery']['shippingMethod'])) {
+                    $attributeVersandart = new KeyValueAttribute();
+                    $attributeVersandart->setKey('Versandart');
+                    $attributeVersandart->setValue(strtoupper($orderData['delivery']['shippingMethod']));
+                    $order->addAttribute($attributeVersandart);
+                }
 
                 // Shipping address
                 $shippingStreet = !empty($orderData['delivery']['street']) ? $orderData['delivery']['street'] : '';
@@ -98,11 +122,18 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $billingAddress->setExtraAddressLine(!empty($orderData['customer']['extraAddressLine']) ? $orderData['customer']['extraAddressLine'] : '');
                 $billingAddress->setZipCode(!empty($orderData['customer']['zip']) ? $orderData['customer']['zip'] : '00000');
                 $billingAddress->setEMail($email);
+
                 $order->setBillingAddress($billingAddress);
 
                 // ToDo:
                 // 1. Versandart "Click & Collect" (Andreas fragen) -> Versandart in WaWi auf "Abholung" setzen
-                // 2. Händlernummer als Auftragsmerkmal setzen
+
+                $shippingMethodId = $this->determineShippingMethodId($orderData['delivery']['shippingMethod'], $isClickAndCollect);
+                if (!empty($shippingMethodId)) {
+                    $shippingMethodIdentity = new Identity('', (int)$shippingMethodId);
+                    $order->setShippingMethodId($shippingMethodIdentity);
+                    $order->setShippingMethodName($orderData['delivery']['shippingMethod']);
+                }
 
                 // Items
                 foreach ($orderData['items'] as $item) {
@@ -116,7 +147,6 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
                     // Please check Dropshipping Connector! We need JTL-ID and set it to
                     $customerOrderItem->setProductId(new Identity($item['jtlId'], 0));
-                    #$customerOrderItem->setId(new Identity($item['productId'], 0));
                     $customerOrderItem->setSku($item['sku']);
                     $customerOrderItem->setName($item['name']);
                     $customerOrderItem->setType(CustomerOrderItem::TYPE_PRODUCT);
@@ -124,20 +154,13 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $customerOrderItem->setPriceGross($item['totalPrice']);
                     $customerOrderItem->setPrice($item['totalPriceNet']);
                     $customerOrderItem->setVat($item['vat']);
-                    $customerOrderItem->setNote('e.g. "ANP_SONDERPREIS=0|ANP_BEIGABE=0|ANP_KREDITKAUF=0"');
                     $order->addItem($customerOrderItem);
                 }
 
+                $order = $this->addShippingCostItem($order, $orderData);
+
                 $order->setTotalSum($orderData['totalSum']);
                 $order->setTotalSumGross($orderData['totalSumGross']);
-
-                if (isset($orderData['salesRepresentative']) && !empty($orderData['salesRepresentative']['customerNumber'])) {
-                    $order->setShippingInfo('ClickAndCollect|' .
-                        $orderData['salesRepresentative']['customerNumber'] . '|' .
-                        $orderData['salesRepresentative']['companyName'] . '|' .
-                        $orderData['salesRepresentative']['id']
-                    );
-                }
 
                 $orders[] = $order;
             }
@@ -146,6 +169,88 @@ class CustomerOrderController extends AbstractController implements PullInterfac
             throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
         }
         return $orders;
+    }
+
+    /**
+     * Add shipping cost as a separate order item (FRACHT01)
+     *
+     * @param CustomerOrder $order
+     * @param array $orderData
+     * @return CustomerOrder
+     */
+    private function addShippingCostItem(CustomerOrder $order, array $orderData): CustomerOrder
+    {
+        $shippingCostGross = $orderData['delivery']['costs']['gross'] ?? 0.0;
+        $shippingCostNet = $orderData['delivery']['costs']['net'] ?? 0.0;
+        $shippingVatRate = $orderData['delivery']['costs']['vat'] ?? 19.0; // ToDo: ist es ok, hier immer 19% zu nehmen?
+
+        // Only add a shipping item if cost > 0
+        if ($shippingCostGross <= 0) {
+            $this->logger->debug(
+                'Skipping shipping cost item - amount is 0',
+                ['orderNumber' => $order->getOrderNumber()]
+            );
+            return $order;
+        }
+
+        // Create a shipping cost item
+        $shippingItem = new CustomerOrderItem();
+        $shippingItem->setProductId(new Identity('', 0)); // No product ID for shipping
+        $shippingItem->setSku('FRACHT01'); // Freight SKU
+        $shippingItem->setName('Frachtkosten'); // Shipping costs
+        $shippingItem->setType(CustomerOrderItem::TYPE_PRODUCT); // Do not use type_shipping!
+        $shippingItem->setQuantity(1.0);
+        $shippingItem->setPriceGross($shippingCostGross);
+        $shippingItem->setPrice($shippingCostNet);
+        $shippingItem->setVat($shippingVatRate);
+        $shippingItem->setNote('Frachtkosten');
+
+        $order->addItem($shippingItem);
+
+        $this->logger->info(
+            'Added shipping cost item to order',
+            [
+                'orderNumber' => $order->getOrderNumber(),
+                'sku' => 'FRACHT01',
+                'gross' => $shippingCostGross,
+                'net' => $shippingCostNet,
+                'vat' => $shippingVatRate
+            ]
+        );
+        return $order;
+    }
+
+    /**
+     * Determine JTL-WaWi shipping method ID based on country and delivery type
+     *
+     * @param string $shippingMethodIdentifier
+     * @param bool $isClickAndCollect Is this a Click & Collect order?
+     * @return string JTL-WaWi shipping method ID
+     */
+    private function determineShippingMethodId(string $shippingMethodIdentifier, bool $isClickAndCollect): string
+    {
+        $default = $this->config->get('shipping.methods.default');
+        return $this->config->get('shipping.methods.'.$shippingMethodIdentifier, $default);
+    }
+
+    /**
+     * Check if a country code is an EU member state
+     *
+     * @param string $isoCountryCode ISO 3166-1 alpha-2 country code
+     * @return bool
+     */
+    private function isEuropeanCountry(string $isoCountryCode): bool
+    {
+        $isoCountryCode = strtoupper(trim($isoCountryCode));
+
+        // EU member states (27 countries as of 2025)
+        $euCountries = [
+            'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+            'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+            'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
+        ];
+
+        return in_array($isoCountryCode, $euCountries, true);
     }
 
     protected function updateModel(Product $model): void

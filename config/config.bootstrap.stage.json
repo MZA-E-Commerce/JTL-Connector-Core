@@ -1,0 +1,64 @@
+{
+  "log": {
+    "level": "debug"
+  },
+  "db": {
+    "host": "jtl-connector-db",
+    "name": "jtl-connector",
+    "username": "jtl-connector",
+    "password": "jtl-connector"
+  },
+  "token": "xxx",
+  "useGrossPrices": false,
+  "setOrderCustomerNumber": false,
+  "shipping": {
+    "methods": {
+      "V01PAK": "11",
+      "V54EPAK": "12",
+      "SPEDITION": "7",
+      "SPERRGUT": ""
+    },
+    "default": "11",
+    "shippingCostItem": {
+      "sku": "FRACHT01",
+      "name": "Frachtkosten",
+      "description": "Frachtkosten"
+    }
+  },
+  "pimcore": {
+    "api": {
+      "url": "http://mza2-nginx/api/jtl/connector",
+      "key": "xxx",
+      "auth": {
+        "username": "jtl-connector",
+        "password": "jtl-connector"
+      },
+      "endpoints": {
+        "getId": {
+          "method": "GET",
+          "url": "/getId?sku={sku}"
+        },
+        "setProductStockLevel": {
+          "method": "POST",
+          "url": "/setProductStockLevel"
+        },
+        "setProductPrice": {
+          "method": "POST",
+          "url": "/setProductPrice"
+        },
+        "setProductData": {
+          "method": "POST",
+          "url": "/setProductData"
+        },
+        "getOrders": {
+          "method": "GET",
+          "url": "/getOrders"
+        },
+        "getCustomers": {
+          "method": "GET",
+          "url": "/getCustomers"
+        }
+      }
+    }
+  }
+}

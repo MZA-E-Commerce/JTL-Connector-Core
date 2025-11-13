@@ -26,12 +26,12 @@ abstract class AbstractController
     /**
      * @var string
      */
-    public const CUSTOMER_TYPE_B2B = 'b1d7b4cbe4d846f0b323a9d840800177';
+    public const CUSTOMER_TYPE_B2B = 'b1d74d846f0b3230017ba9d84084cbe7';
 
     /**
      * @var string
      */
-    public const CUSTOMER_TYPE_B2C = 'c2c6154f05b342d4b2da85e51ec805c9';
+    public const CUSTOMER_TYPE_B2C = 'c22d4b2da85e5c6154f1ec805b3405c9';
 
     public const PIMCORE_CUSTOMER_TYPE_B2B = 'B2B';
     public const PIMCORE_CUSTOMER_TYPE_B2C = 'B2C';
