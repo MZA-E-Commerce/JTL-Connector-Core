@@ -57,6 +57,10 @@
         "getCustomers": {
           "method": "GET",
           "url": "/getCustomers"
+        },
+        "createProduct": {
+          "method": "POST",
+          "url": "/createProduct"
         }
       }
     }

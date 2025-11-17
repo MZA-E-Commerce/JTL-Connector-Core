@@ -2,6 +2,7 @@
 
 namespace Jtl\Connector\Core\Controller;
 
+use JMS\Serializer\SerializerInterface;
 use Jtl\Connector\Core\Application\Application;
 use Jtl\Connector\Core\Config\CoreConfigInterface;
 use Jtl\Connector\Core\Logger\LoggerService;
@@ -10,6 +11,7 @@ use Jtl\Connector\Core\Model\Identity;
 use Jtl\Connector\Core\Model\Product;
 use Jtl\Connector\Core\Model\ProductPrice;
 use Jtl\Connector\Core\Model\QueryFilter;
+use Jtl\Connector\Core\Serializer\SerializerBuilder;
 use Jtl\Connector\Core\Utilities\Validator\Validate;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpClient\HttpClient;
@@ -70,6 +72,11 @@ abstract class AbstractController
     protected LoggerInterface $logger;
 
     /**
+     * @var SerializerInterface
+     */
+    private SerializerInterface $serializer;
+
+    /**
      * Using direct dependencies for better testing and easier use with a DI container.
      *
      * AbstractController constructor.
@@ -80,6 +87,8 @@ abstract class AbstractController
     {
         $this->config = $config;
         $this->logger = $logger;
+
+        $this->serializer = SerializerBuilder::create()->build();
     }
 
     /**
@@ -112,8 +121,13 @@ abstract class AbstractController
                 try {
                     $pimcoreId = $this->getPimcoreId($model->getSku());
                 } catch (\Throwable $e) {
-                    $this->logger->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage());
-                    continue;
+                    $this->logger->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage() . '. Try to create a new product in Pimcore.');
+                    try {
+                        $pimcoreId = $this->createPimcoreProduct($model);
+                    } catch (\Throwable $e) {
+                        $this->logger->error('Error creating Pimcore product: ' . $e->getMessage());
+                        continue;
+                    }
                 }
 
                 $identity = new Identity($pimcoreId, $identity->getHost());
@@ -261,9 +275,7 @@ abstract class AbstractController
         // Tax rate
         $postData['taxRate'] = $product->getVat();
 
-
         try {
-
             $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
 
             $statusCode = $response->getStatusCode();
@@ -315,5 +327,68 @@ abstract class AbstractController
         }
 
         return $netPrice;
+    }
+
+    /**
+     * @param Product $product
+     * @return int
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
+    private function createPimcoreProduct(Product $product): int
+    {
+        $httpMethod = $this->config->get('pimcore.api.endpoints.createProduct.method');
+        $client = $this->getHttpClient();
+        $fullApiUrl = $this->getEndpointUrl('createProduct');
+
+        $postData['published'] = false;
+        $postData['sku'] = $product->getSku();
+
+        $jtlId = $product->getId()?->getHost();
+        $postData['jtlId'] = $jtlId;
+
+        $postData['gtin'] = $product->getEan();
+        $postData['stockLevel'] = $product->getStockLevel();
+        $postData['vat'] = $product->getVat();
+        $postData['isActive'] = $product->getIsActive();
+
+        $name = $product->getSku() . '_NAME_NOT_SET';
+        $i18n = $product->getI18ns();
+        foreach ($i18n as $i18nModel) {
+            if ($i18nModel->getLanguageIso() === 'de' && !empty($i18nModel->getName())) {
+                $name = $i18nModel->getName();
+            }
+        }
+        $postData['name'] = $name;
+
+        try {
+            $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
+
+            $statusCode = $response->getStatusCode();
+            if ($statusCode !== 200) {
+                $this->logger->error('Product creation failed in Pimcore (SKU: ' . $product->getSku() . ')');
+            }
+
+            $responseData = $response->toArray();
+
+            if ($statusCode === 200 && isset($responseData['success'])
+                && $responseData['success'] === true
+                && !empty($responseData['id'])) {
+                $this->logger->info('Product created successfully in Pimcore (SKU: ' . $product->getSku() . ')');
+                return $responseData['id'];
+            }
+
+            throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
+
+        } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
+            if (method_exists($e, 'getResponse') && $e->getResponse() instanceof \Symfony\Contracts\HttpClient\ResponseInterface) {
+                $errorMessage = $e->getResponse()?->getContent(false);
+            } else {
+                $errorMessage = $e->getMessage();
+            }
+            throw new \RuntimeException($errorMessage, $e->getCode(), $e);
+        }
     }
 }
