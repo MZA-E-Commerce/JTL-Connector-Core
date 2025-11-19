@@ -35,14 +35,12 @@ abstract class AbstractController
      */
     public const CUSTOMER_TYPE_B2C = 'c22d4b2da85e5c6154f1ec805b3405c9';
 
-    public const PIMCORE_CUSTOMER_TYPE_B2B = 'B2B';
     public const PIMCORE_CUSTOMER_TYPE_B2C = 'B2C';
 
     /**
      * @var array
      */
     public const CUSTOMER_TYPE_MAPPINGS_REVERSE = [
-        self::PIMCORE_CUSTOMER_TYPE_B2B => self::CUSTOMER_TYPE_B2B,
         self::PIMCORE_CUSTOMER_TYPE_B2C => self::CUSTOMER_TYPE_B2C
     ];
 

@@ -53,13 +53,6 @@ class GlobalDataController implements PullInterface, PushInterface
                 ->addI18n((new CustomerGroupI18n())->setName('Endkunden')->setLanguageIso('ger'))
         );
 
-        $globalData->addCustomerGroup(
-            (new CustomerGroup())->setId(new Identity(AbstractController::CUSTOMER_TYPE_B2B))
-                ->setIsDefault(false)
-                ->setApplyNetPrice(true)
-                ->addI18n((new CustomerGroupI18n())->setName('Händler')->setLanguageIso('ger'))
-        );
-
         // TaxRates
 
         $globalData->addTaxRate(
