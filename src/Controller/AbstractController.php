@@ -243,12 +243,14 @@ abstract class AbstractController
             case self::UPDATE_TYPE_PRODUCT_PRICE:
                 $this->logger->info('Updating product price (SKU: ' . $product->getSku() . ')');
                 $postData['netPrice'] = $this->getNetPrice($product, self::CUSTOMER_TYPE_B2C);
+                $postData['specialPrice'] = $this->getSpecialPrice($product, self::CUSTOMER_TYPE_B2C);
                 break;
             case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!!
 
                 $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
 
                 $postData['netPrice'] = $this->getNetPrice($product, self::CUSTOMER_TYPE_B2C);
+                $postData['specialPrice'] = $this->getSpecialPrice($product, self::CUSTOMER_TYPE_B2C);
 
                 $useGrossPrices = $this->config->get('useGrossPrices');
                 if ($useGrossPrices) {
@@ -300,6 +302,31 @@ abstract class AbstractController
      */
     abstract protected function updateModel(Product $model): void;
 
+    private function getSpecialPrice(Product $product, string $type = self::CUSTOMER_TYPE_B2C): array
+    {
+        $specialPrice = [];
+
+        if (empty($product->getSpecialPrices())) {
+            return $specialPrice;
+        }
+
+        foreach ($product->getSpecialPrices() as $priceModel) {
+            if ($priceModel->getItems()) {
+                foreach ($priceModel->getItems() as $item) {
+                    if ($item->getCustomerGroupId()->getEndpoint() == $type) {
+                        $specialPrice = [
+                            'priceNet' => $item->getPriceNet(),
+                            'activeFromDate' => $priceModel->getActiveFromDate(),
+                            'activeUntilDate' => $priceModel->getActiveUntilDate(),
+                            'considerDateLimit' => $priceModel->getConsiderDateLimit()
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $specialPrice;
+    }
 
     /**
      * @param Product $product
