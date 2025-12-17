@@ -411,4 +411,50 @@ abstract class AbstractController
             throw new \RuntimeException($errorMessage, $e->getCode(), $e);
         }
     }
+
+    /**
+     * @param Product $product
+     * @return void
+     */
+    protected function deleteProduct(Product $product): void
+    {
+        $postData['jtlId'] = $product->getId()->getHost();
+
+        $skuOrEndpoint = $product->getSku() ?: $product->getId()->getEndpoint();
+        $postData['sku'] = $skuOrEndpoint;
+
+        $client = $this->getHttpClient();
+        $fullApiUrl = $this->getEndpointUrl('deleteProduct');
+        $httpMethod = $this->config->get('pimcore.api.endpoints.deleteProduct.method');
+
+        $ignoreProductNotFound = $this->config->get('pimcore.api.endpoints.deleteProduct.ignoreProductNotFound');
+
+        $this->logger->info($httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData));
+
+        try {
+            $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
+            $statusCode = $response->getStatusCode();
+            $responseData = $response->toArray();
+
+            if ($statusCode === 200 && isset($responseData['success'])
+                && $responseData['success'] === true
+                && !empty($responseData['id'])) {
+                $this->logger->info('Product deleted successfully in Pimcore (PIM-ID: ' . $responseData['id'] . ')');
+                return;
+            }
+
+            if ($statusCode === 404 && $ignoreProductNotFound === true) {
+                $this->logger->info('Product not found in Pimcore!');
+                return;
+            }
+
+            throw new \RuntimeException('API error: ' . ($data['error'] ?? 'Unknown error'));
+        } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
+            if ($e->getCode() === 404 && $ignoreProductNotFound === true) {
+                $this->logger->info('Product not found in Pimcore!');
+                return;
+            }
+            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+        }
+    }
 }

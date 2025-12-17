@@ -1,8 +1,8 @@
 {
     "entities": {
         "Category": {
-            "pull": true,
-            "push": true,
+            "pull": false,
+            "push": false,
             "delete": false
         },
         "CategoryAttr": {
@@ -151,18 +151,18 @@
             "delete": false
         },
         "DeliveryNote": {
-            "pull": true,
-            "push": true,
+            "pull": false,
+            "push": false,
             "delete": false
         },
         "DeliveryNoteItem": {
-            "pull": true,
-            "push": true,
+            "pull": false,
+            "push": false,
             "delete": false
         },
         "DeliveryNoteItemInfo": {
-            "pull": true,
-            "push": true,
+            "pull": false,
+            "push": false,
             "delete": false
         },
         "FileDownload": {
@@ -191,8 +191,8 @@
             "delete": false
         },
         "Image": {
-            "pull": true,
-            "push": true,
+            "pull": false,
+            "push": false,
             "delete": false
         },
         "Language": {
@@ -246,14 +246,14 @@
             "delete": false
         },
         "Payment": {
-            "pull": true,
-            "push": true,
+            "pull": false,
+            "push": false,
             "delete": false
         },
         "Product": {
             "pull": true,
             "push": true,
-            "delete": false
+            "delete": true
         },
         "Product2Category": {
             "pull": true,

@@ -61,6 +61,11 @@
         "createProduct": {
           "method": "POST",
           "url": "/createProduct"
+        },
+        "deleteProduct": {
+          "ignoreProductNotFound": true,
+          "method": "DELETE",
+          "url": "/deleteProduct"
         }
       }
     }
