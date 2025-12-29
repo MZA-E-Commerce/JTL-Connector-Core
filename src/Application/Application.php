@@ -329,6 +329,14 @@ class Application
 
         if ($_SERVER['SERVER_NAME'] ?? gethostname() == 'jtl-connector.docker') {
             file_put_contents('/var/www/html/var/log/rpc.log', $jtlRpc . PHP_EOL . PHP_EOL, FILE_APPEND);
+        } else {
+            // Get the filepath to indicate dev or prod
+            $basePath = str_contains(__DIR__, 'prod.')
+                ? '/home/www/p689712/html/prod.jtl-connector-pimcore'
+                : '/home/www/p689712/html/jtl-connector-pimcore';
+            file_put_contents($basePath . '/var/log/rpc.log', 'API URLS
+                            | Date: ' . date('d.m.Y H:i:s') . '
+                            | jtlRpc-Data: ' . PHP_EOL . $jtlRpc . PHP_EOL . PHP_EOL, FILE_APPEND);
         }
 
         $this->httpResponse->setLogger($this->loggerService->get(LoggerService::CHANNEL_RPC));

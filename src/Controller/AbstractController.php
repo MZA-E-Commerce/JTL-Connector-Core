@@ -65,6 +65,11 @@ abstract class AbstractController
     protected LoggerInterface $logger;
 
     /**
+     * @var LoggerService
+     */
+    protected LoggerService $loggerService;
+
+    /**
      * @var SerializerInterface
      */
     private SerializerInterface $serializer;
@@ -75,11 +80,13 @@ abstract class AbstractController
      * AbstractController constructor.
      * @param CoreConfigInterface $config
      * @param LoggerInterface $logger
+     * @param LoggerService $loggerService
      */
-    public function __construct(CoreConfigInterface $config, LoggerInterface $logger)
+    public function __construct(CoreConfigInterface $config, LoggerInterface $logger, LoggerService $loggerService)
     {
         $this->config = $config;
         $this->logger = $logger;
+        $this->loggerService = $loggerService;
 
         $this->serializer = SerializerBuilder::create()->build();
     }
@@ -114,11 +121,11 @@ abstract class AbstractController
                 try {
                     $pimcoreId = $this->getPimcoreId($model->getSku());
                 } catch (\Throwable $e) {
-                    $this->logger->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage() . '. Try to create a new product in Pimcore.');
+                    $this->loggerService->get('pimcore')->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage() . '. Try to create a new product in Pimcore.');
                     try {
                         $pimcoreId = $this->createPimcoreProduct($model);
                     } catch (\Throwable $e) {
-                        $this->logger->error('Error creating Pimcore product: ' . $e->getMessage());
+                        $this->loggerService->get('pimcore')->error('Error creating Pimcore product: ' . $e->getMessage());
                         continue;
                     }
                 }
@@ -202,10 +209,11 @@ abstract class AbstractController
             if ($statusCode === 200 && isset($data['success']) && $data['success'] === true) {
                 return (int)$data['id'];
             }
-
+            $this->loggerService->get('getPimcoreId')->error('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
             throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
 
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
+            $this->loggerService->get('getPimcoreId')->error('HTTP request failed: ' . $e->getMessage());
             throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
         }
     }
@@ -237,17 +245,17 @@ abstract class AbstractController
 
         switch ($type) {
             case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
-                $this->logger->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
+                $this->loggerService->get('updateProductPimcore')->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
                 $postData['stockLevel'] = $product->getStockLevel();
                 break;
             case self::UPDATE_TYPE_PRODUCT_PRICE:
-                $this->logger->info('Updating product price (SKU: ' . $product->getSku() . ')');
+                $this->loggerService->get('updateProductPimcore')->info('Updating product price (SKU: ' . $product->getSku() . ')');
                 $postData['netPrice'] = $this->getNetPrice($product, self::CUSTOMER_TYPE_B2C);
                 $postData['specialPrice'] = $this->getSpecialPrice($product, self::CUSTOMER_TYPE_B2C);
                 break;
             case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!!
 
-                $this->logger->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
+                $this->loggerService->get('updateProductPimcore')->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
 
                 $postData['netPrice'] = $this->getNetPrice($product, self::CUSTOMER_TYPE_B2C);
                 $postData['specialPrice'] = $this->getSpecialPrice($product, self::CUSTOMER_TYPE_B2C);
@@ -274,17 +282,18 @@ abstract class AbstractController
             $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
 
             $statusCode = $response->getStatusCode();
+            $responseData = $response->toArray();
+
             if ($statusCode !== 200) {
-                $this->logger->error('Product updated failed in Pimcore (SKU: ' . $product->getSku() . ')');
+                $this->loggerService->get('updateProductPimcore')->error('Product updated failed in Pimcore (SKU: ' . $product->getSku() . ')' . ', Error: ' . ($responseData['error'] ?? 'Unknown error'));
             }
 
-            $responseData = $response->toArray();
             if ($statusCode === 200 && isset($responseData['success']) && $responseData['success'] === true) {
-                $this->logger->info('Product updated successfully in Pimcore (SKU: ' . $product->getSku() . ')');
+                $this->loggerService->get('updateProductPimcore')->info('Product updated successfully in Pimcore (SKU: ' . $product->getSku() . ')');
                 return;
             }
-
-            throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
+            $this->loggerService->get('updateProductPimcore')->error('Pimcore API error: ' . ($responseData['error'] ?? 'Unknown error'));
+            throw new \RuntimeException('Pimcore API error: ' . ($responseData['error'] ?? 'Unknown error'));
 
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
             if (method_exists($e, 'getResponse') && $e->getResponse() instanceof \Symfony\Contracts\HttpClient\ResponseInterface) {
@@ -292,6 +301,7 @@ abstract class AbstractController
             } else {
                 $errorMessage = $e->getMessage();
             }
+            $this->loggerService->get('updateProductPimcore')->error($errorMessage);
             throw new \RuntimeException($errorMessage, $e->getCode(), $e);
         }
     }
@@ -388,7 +398,7 @@ abstract class AbstractController
 
             $statusCode = $response->getStatusCode();
             if ($statusCode !== 200) {
-                $this->logger->error('Product creation failed in Pimcore (SKU: ' . $product->getSku() . ')');
+                $this->loggerService->get('createPimcoreProduct')->error('Product creation failed in Pimcore (SKU: ' . $product->getSku() . ')');
             }
 
             $responseData = $response->toArray();
@@ -396,11 +406,12 @@ abstract class AbstractController
             if ($statusCode === 200 && isset($responseData['success'])
                 && $responseData['success'] === true
                 && !empty($responseData['id'])) {
-                $this->logger->info('Product created successfully in Pimcore (SKU: ' . $product->getSku() . ')');
-                return $responseData['id'];
+                $this->loggerService->get('createPimcoreProduct')->info('Product created successfully in Pimcore (SKU: ' . $product->getSku() . ')');
+                return (int)$responseData['id'];
             }
 
-            throw new \RuntimeException('Pimcore API error: ' . ($data['error'] ?? 'Unknown error'));
+            $this->loggerService->get('createPimcoreProduct')->error('Pimcore API error: ' . ($responseData['error'] ?? 'Unknown error'));
+            throw new \RuntimeException('Pimcore API error: ' . ($responseData['error'] ?? 'Unknown error'));
 
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
             if (method_exists($e, 'getResponse') && $e->getResponse() instanceof \Symfony\Contracts\HttpClient\ResponseInterface) {
@@ -408,6 +419,7 @@ abstract class AbstractController
             } else {
                 $errorMessage = $e->getMessage();
             }
+            $this->loggerService->get('createPimcoreProduct')->error($errorMessage);
             throw new \RuntimeException($errorMessage, $e->getCode(), $e);
         }
     }
@@ -415,6 +427,7 @@ abstract class AbstractController
     /**
      * @param Product $product
      * @return void
+     * @throws \Exception
      */
     protected function deleteProduct(Product $product): void
     {
@@ -429,7 +442,7 @@ abstract class AbstractController
 
         $ignoreProductNotFound = $this->config->get('pimcore.api.endpoints.deleteProduct.ignoreProductNotFound');
 
-        $this->logger->info($httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData));
+        $this->loggerService->get('deleteProduct')->info($httpMethod . ' -> ' . $fullApiUrl . ' -> ' . json_encode($postData));
 
         try {
             $response = $client->request($httpMethod, $fullApiUrl, ['json' => $postData]);
@@ -439,21 +452,22 @@ abstract class AbstractController
             if ($statusCode === 200 && isset($responseData['success'])
                 && $responseData['success'] === true
                 && !empty($responseData['id'])) {
-                $this->logger->info('Product deleted successfully in Pimcore (PIM-ID: ' . $responseData['id'] . ')');
+                $this->loggerService->get('deleteProduct')->info('Product deleted successfully in Pimcore (PIM-ID: ' . $responseData['id'] . ')');
                 return;
             }
 
             if ($statusCode === 404 && $ignoreProductNotFound === true) {
-                $this->logger->info('Product not found in Pimcore!');
+                $this->loggerService->get('deleteProduct')->info('Product not found in Pimcore!');
                 return;
             }
 
-            throw new \RuntimeException('API error: ' . ($data['error'] ?? 'Unknown error'));
+            throw new \RuntimeException('API error: ' . ($responseData['error'] ?? 'Unknown error'));
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
             if ($e->getCode() === 404 && $ignoreProductNotFound === true) {
-                $this->logger->info('Product not found in Pimcore!');
+                $this->loggerService->get('deleteProduct')->info('Product not found in Pimcore!');
                 return;
             }
+            $this->loggerService->get('deleteProduct')->error('HTTP request failed: ' . $e->getMessage());
             throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
         }
     }
