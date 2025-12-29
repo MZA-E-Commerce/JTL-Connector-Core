@@ -424,9 +424,7 @@ abstract class AbstractController
     protected function deleteProduct(Product $product): void
     {
         $postData['jtlId'] = $product->getId()->getHost();
-
-        $skuOrEndpoint = $product->getSku() ?: $product->getId()->getEndpoint();
-        $postData['sku'] = $skuOrEndpoint;
+        $postData['sku'] = $product->getSku() ?: null;
 
         $client = $this->getHttpClient();
         $fullApiUrl = $this->getEndpointUrl('deleteProduct');
