@@ -109,30 +109,22 @@ abstract class AbstractController
             }
 
             $identity = $model->getId();
-            // Check existing mapping
-            if ($identity->getEndpoint()) {
-                $this->logger->info(\sprintf(
-                    'Product already has identity (host=%d endpoint=%d)',
-                    $identity->getHost(),
-                    $identity->getEndpoint()
-                ));
-            } else {
-                // Get Pimcore ID
-                try {
-                    $pimcoreId = $this->getPimcoreId($model->getSku());
-                } catch (\Throwable $e) {
-                    $this->loggerService->get('pimcore')->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage() . '. Try to create a new product in Pimcore.');
-                    try {
-                        $pimcoreId = $this->createPimcoreProduct($model);
-                    } catch (\Throwable $e) {
-                        $this->loggerService->get('pimcore')->error('Error creating Pimcore product: ' . $e->getMessage());
-                        continue;
-                    }
-                }
 
-                $identity = new Identity($pimcoreId, $identity->getHost());
-                $model->setId($identity);
+            // Get Pimcore ID
+            try {
+                $pimcoreId = $this->getPimcoreId($model->getSku());
+            } catch (\Throwable $e) {
+                $this->loggerService->get('pimcore')->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage() . '. Try to create a new product in Pimcore.');
+                try {
+                    $pimcoreId = $this->createPimcoreProduct($model);
+                } catch (\Throwable $e) {
+                    $this->loggerService->get('pimcore')->error('Error creating Pimcore product: ' . $e->getMessage());
+                    continue;
+                }
             }
+
+            $identity = new Identity($pimcoreId, $identity->getHost());
+            $model->setId($identity);
 
             // Hook for the update
             try {
