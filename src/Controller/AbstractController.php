@@ -159,8 +159,12 @@ abstract class AbstractController
             throw new \RuntimeException('Pimcore API key is not set');
         }
 
-        $url = $this->config->get('pimcore.api.url');
-        return $url . $this->config->get('pimcore.api.endpoints.' . $endpointKey . '.url');
+        $fullApiUrl = $this->config->get('pimcore.api.endpoints.' . $endpointKey . '.fullApiUrl');
+        if (!empty($fullApiUrl)) {
+            return $fullApiUrl;
+        }
+
+        return $this->config->get('pimcore.api.url') . $this->config->get('pimcore.api.endpoints.' . $endpointKey . '.url');
     }
 
     /**

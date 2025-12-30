@@ -35,34 +35,42 @@
       },
       "endpoints": {
         "getId": {
+          "fullApiUrl": "",
           "method": "GET",
           "url": "/getId?sku={sku}"
         },
         "setProductStockLevel": {
+          "fullApiUrl": "",
           "method": "POST",
           "url": "/setProductStockLevel"
         },
         "setProductPrice": {
+          "fullApiUrl": "",
           "method": "POST",
           "url": "/setProductPrice"
         },
         "setProductData": {
+          "fullApiUrl": "",
           "method": "POST",
           "url": "/setProductData"
         },
         "getOrders": {
+          "fullApiUrl": "",
           "method": "GET",
           "url": "/getOrders"
         },
         "getCustomers": {
+          "fullApiUrl": "",
           "method": "GET",
           "url": "/getCustomers"
         },
         "createProduct": {
+          "fullApiUrl": "",
           "method": "POST",
           "url": "/createProduct"
         },
         "deleteProduct": {
+          "fullApiUrl": "",
           "ignoreProductNotFound": true,
           "method": "DELETE",
           "url": "/deleteProduct"
