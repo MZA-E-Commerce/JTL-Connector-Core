@@ -88,10 +88,36 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 }
 
                 if (!empty($orderData['delivery']['shippingMethod'])) {
-                    $attributeVersandart = new KeyValueAttribute();
-                    $attributeVersandart->setKey('Versandart');
-                    $attributeVersandart->setValue(strtoupper($orderData['delivery']['shippingMethod']));
-                    $order->addAttribute($attributeVersandart);
+                    $attributeShippingMethod = new KeyValueAttribute();
+                    $attributeShippingMethod->setKey('Versandart');
+                    $attributeShippingMethod->setValue(strtoupper($orderData['delivery']['shippingMethod']));
+                    $order->addAttribute($attributeShippingMethod);
+                }
+
+                // OnlineShopShipping data (deliveryMethod, fulfillmentMethod, shippingProvider, identifier)
+                if (!empty($orderData['delivery']['onlineShopShipping']['identifier'])) {
+                    $attributeOnlineShopShippingIdentifier = new KeyValueAttribute();
+                    $attributeOnlineShopShippingIdentifier->setKey('onlineShopShippingIdentifier');
+                    $attributeOnlineShopShippingIdentifier->setValue($orderData['delivery']['onlineShopShipping']['identifier']);
+                    $order->addAttribute($attributeOnlineShopShippingIdentifier);
+                }
+                if (!empty($orderData['delivery']['onlineShopShipping']['deliveryMethod'])) {
+                    $attributeOnlineShopShippingDeliveryMethod = new KeyValueAttribute();
+                    $attributeOnlineShopShippingDeliveryMethod->setKey('onlineShopShippingDeliveryMethod');
+                    $attributeOnlineShopShippingDeliveryMethod->setValue($orderData['delivery']['onlineShopShipping']['deliveryMethod']);
+                    $order->addAttribute($attributeOnlineShopShippingDeliveryMethod);
+                }
+                if (!empty($orderData['delivery']['onlineShopShipping']['fulfillmentMethod'])) {
+                    $attributeOnlineShopShippingFulfillmentMethod = new KeyValueAttribute();
+                    $attributeOnlineShopShippingFulfillmentMethod->setKey('onlineShopShippingFulfillmentMethod');
+                    $attributeOnlineShopShippingFulfillmentMethod->setValue($orderData['delivery']['onlineShopShipping']['fulfillmentMethod']);
+                    $order->addAttribute($attributeOnlineShopShippingFulfillmentMethod);
+                }
+                if (!empty($orderData['delivery']['onlineShopShipping']['shippingProvider'])) {
+                    $attributeOnlineShopShippingShippingProvider = new KeyValueAttribute();
+                    $attributeOnlineShopShippingShippingProvider->setKey('onlineShopShippingShippingProvider');
+                    $attributeOnlineShopShippingShippingProvider->setValue($orderData['delivery']['onlineShopShipping']['shippingProvider']);
+                    $order->addAttribute($attributeOnlineShopShippingShippingProvider);
                 }
 
                 // Shipping address
@@ -180,9 +206,9 @@ class CustomerOrderController extends AbstractController implements PullInterfac
      */
     private function addShippingCostItem(CustomerOrder $order, array $orderData): CustomerOrder
     {
-        $shippingCostGross = $orderData['delivery']['costs']['gross'] ?? 0.0;
-        $shippingCostNet = $orderData['delivery']['costs']['net'] ?? 0.0;
-        $shippingVatRate = $orderData['delivery']['costs']['vat'] ?? 19.0; // ToDo: ist es ok, hier immer 19% zu nehmen?
+        $shippingCostGross = !empty($orderData['delivery']['costs']) ? (float)$orderData['delivery']['costs'] : 0.0;
+        $shippingVatRate = 19.0;
+        $shippingCostNet = $shippingCostGross / (1 + $shippingVatRate / 100);
 
         // Only add a shipping item if cost > 0
         if ($shippingCostGross <= 0) {
