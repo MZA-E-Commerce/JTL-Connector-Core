@@ -236,7 +236,8 @@ abstract class AbstractController
             'uvp' => null,
             'netPrice' => null,
             'stockLevel' => null,
-            'customerGroup' => self::PIMCORE_CUSTOMER_TYPE_B2C
+            'customerGroup' => self::PIMCORE_CUSTOMER_TYPE_B2C,
+            'jtlShippingClassId' => (int)$product->getShippingClassId()?->getHost()
         ];
 
         switch ($type) {
