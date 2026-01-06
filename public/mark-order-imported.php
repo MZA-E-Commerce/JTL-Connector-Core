@@ -205,10 +205,7 @@ try {
     echo json_encode([
         'success' => true,
         'message' => 'Order marked as ' . ($reset ? 'reset' : 'imported'),
-        'apiResponse' => $apiResponse,
-        'auftragsNr' => $pimcoreOrderId,
-        'externeAuftragsNr' => $pimcoreOrderId,
-        'auftragsNr' => $jtlOrderId
+        'apiResponse' => $apiResponse
     ]);
 
 } catch (Exception $e) {
