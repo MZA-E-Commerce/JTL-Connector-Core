@@ -90,7 +90,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 if (!empty($orderData['delivery']['shippingMethod'])) {
                     $attributeShippingMethod = new KeyValueAttribute();
                     $attributeShippingMethod->setKey('Versandart');
-                    $attributeShippingMethod->setValue(strtoupper($orderData['delivery']['shippingMethod']));
+                    $attributeShippingMethod->setValue($orderData['delivery']['shippingMethod']);
                     $order->addAttribute($attributeShippingMethod);
                 }
 
