@@ -41,6 +41,14 @@ function markOrderAsImported($pimcoreOrderId, $jtlOrderNumber, $jtlOrderId, bool
         'Content-Length: 0'
     ]);
 
+    // Basic Auth
+    $basicAuthUser = $_ENV['BASIC_AUTH_USER'] ?? '';
+    $basicAuthPassword = $_ENV['BASIC_AUTH_PASSWORD'] ?? '';
+    if (!empty($basicAuthUser) && !empty($basicAuthPassword)) {
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_USERPWD, $basicAuthUser . ':' . $basicAuthPassword);
+    }
+
     // Deactivate SSL verification in debug mode
     if (($_ENV['DEBUG_MODE'] ?? 'false') === 'true') {
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
