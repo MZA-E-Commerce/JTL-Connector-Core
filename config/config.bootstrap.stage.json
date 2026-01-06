@@ -15,8 +15,8 @@
     "methods": {
       "V01PAK": "11",
       "V54EPAK": "12",
-      "SPEDITION": "7",
-      "SPERRGUT": ""
+      "Spedition": "7",
+      "Sperrgut": ""
     },
     "default": "11",
     "shippingCostItem": {
