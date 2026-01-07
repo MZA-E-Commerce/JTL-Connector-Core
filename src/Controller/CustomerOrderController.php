@@ -188,6 +188,9 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $order->setTotalSum($orderData['totalSum']);
                 $order->setTotalSumGross($orderData['totalSumGross']);
 
+                $paymentCode = $this->getPaymentCode($orderData['paymentInfo']);
+                $order->setPaymentModuleCode($paymentCode);
+
                 $orders[] = $order;
             }
 
@@ -282,5 +285,14 @@ class CustomerOrderController extends AbstractController implements PullInterfac
     protected function updateModel(Product $model): void
     {
         // nothing to-do here
+    }
+
+    private function getPaymentCode(array $paymentInfo): string
+    {
+        // ToDo: Get Payment code
+
+        // JTL WaWi knows: "Bar", "Kredikarte", "PayPal", "Rechnung", "Scheck", "Überweisung"
+
+        return 'ToDo:Payment-Method';
     }
 }
