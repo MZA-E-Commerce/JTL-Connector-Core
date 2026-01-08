@@ -293,6 +293,6 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
         // JTL WaWi knows: "Bar", "Kredikarte", "PayPal", "Rechnung", "Scheck", "Überweisung"
 
-        return 'ToDo:Payment-Method';
+        return 'B2B-Bezahlt'; // todo: ändern!
     }
 }
