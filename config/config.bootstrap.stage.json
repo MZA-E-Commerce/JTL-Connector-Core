@@ -37,7 +37,7 @@
         "getId": {
           "fullApiUrl": "",
           "method": "GET",
-          "url": "/getId?sku={sku}"
+          "url": "/?setPublished=1&sku={sku}"
         },
         "setProductStockLevel": {
           "fullApiUrl": "",
