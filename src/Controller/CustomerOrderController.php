@@ -151,9 +151,6 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
                 $order->setBillingAddress($billingAddress);
 
-                // ToDo:
-                // 1. Versandart "Click & Collect" (Andreas fragen) -> Versandart in WaWi auf "Abholung" setzen
-
                 $shippingMethodId = $this->determineShippingMethodId($orderData['delivery']['shippingMethod'], $isClickAndCollect);
                 if (!empty($shippingMethodId)) {
                     $shippingMethodIdentity = new Identity('', (int)$shippingMethodId);
@@ -289,10 +286,12 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
     private function getPaymentCode(array $paymentInfo): string
     {
-        // ToDo: Get Payment code
+        $paymentMethod = $paymentInfo['paymentMethod'] ?? 'pimcore';
+        $mapping= $this->config->get('mapping.paymentMethods');
+        if (array_key_exists($paymentMethod, $mapping)) {
+            return $mapping[$paymentMethod];
+        }
 
-        // JTL WaWi knows: "Bar", "Kredikarte", "PayPal", "Rechnung", "Scheck", "Überweisung"
-
-        return 'B2B-Bezahlt'; // todo: ändern!
+        return 'payment_method_' . $paymentMethod . '_unknown';
     }
 }

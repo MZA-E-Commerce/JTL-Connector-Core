@@ -11,6 +11,17 @@
   "token": "xxx",
   "useGrossPrices": false,
   "setOrderCustomerNumber": false,
+  "mapping": {
+    "paymentMethods": {
+      "prepayment": "Vorkasse",
+      "card": "Kreditkarte",
+      "paypal": "PayPal",
+      "invoice": "Rechnung",
+      "installment": "Ratenkauf",
+      "paylater-invoice": "Rechnung",
+      "paylater-installment": "Ratenkauf"
+    }
+  },
   "shipping": {
     "methods": {
       "V01PAK": "11",
