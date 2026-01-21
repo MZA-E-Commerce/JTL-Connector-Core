@@ -192,8 +192,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
             }
 
         } catch (\Throwable $e) {
-
-            $this->logger->error('HTTP request failed', [
+            $this->loggerService->get('getPimcoreCustomerOrders')->error('HTTP request failed', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
