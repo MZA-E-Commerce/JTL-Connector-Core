@@ -173,10 +173,10 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $customerOrderItem->setSku($item['sku']);
                     $customerOrderItem->setName($item['name']);
                     $customerOrderItem->setType(CustomerOrderItem::TYPE_PRODUCT);
-                    $customerOrderItem->setQuantity($item['quantity']);
-                    $customerOrderItem->setPriceGross($item['totalPrice']);
-                    $customerOrderItem->setPrice($item['totalPriceNet']);
-                    $customerOrderItem->setVat($item['vat']);
+                    $customerOrderItem->setQuantity((float)$item['quantity']);
+                    $customerOrderItem->setPriceGross((float)$item['totalPrice']);
+                    $customerOrderItem->setPrice((float)$item['totalPriceNet']);
+                    $customerOrderItem->setVat((float)$item['vat']);
                     $order->addItem($customerOrderItem);
                 }
 
@@ -185,13 +185,26 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $order->setTotalSum($orderData['totalSum']);
                 $order->setTotalSumGross($orderData['totalSumGross']);
 
-                $paymentCode = $this->getPaymentCode($orderData['paymentInfo']);
+                $paymentCode = $this->getPaymentCode($orderData['paymentInfo'] ?? []);
                 $order->setPaymentModuleCode($paymentCode);
 
                 $orders[] = $order;
             }
 
         } catch (\Throwable $e) {
+
+            $this->logger->error('HTTP request failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'code' => $e->getCode(),
+                'trace' => $e->getTraceAsString(),
+                'previous' => $e->getPrevious() ? [
+                    'message' => $e->getPrevious()->getMessage(),
+                    'trace' => $e->getPrevious()->getTraceAsString(),
+                ] : null,
+            ]);
+
             throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
         }
         return $orders;
