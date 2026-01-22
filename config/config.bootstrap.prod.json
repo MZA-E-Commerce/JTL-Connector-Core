@@ -38,6 +38,7 @@
   },
   "pimcore": {
     "api": {
+      "useBulk": true,
       "url": "http://mza2-nginx/api/jtl/connector",
       "key": "xxx",
       "auth": {
@@ -45,10 +46,25 @@
         "password": "jtl-connector"
       },
       "endpoints": {
+        "bulkGetIds": {
+          "fullApiUrl": "",
+          "method": "POST",
+          "url": "/bulkGetIds"
+        },
+        "bulkCreateProducts": {
+          "fullApiUrl": "",
+          "method": "POST",
+          "url": "/bulkCreateProducts"
+        },
+        "bulkSetProductData": {
+          "fullApiUrl": "",
+          "method": "POST",
+          "url": "/bulkSetProductData"
+        },
         "getId": {
           "fullApiUrl": "",
           "method": "GET",
-          "url": "/?setPublished=1&sku={sku}"
+          "url": "/getId?setPublished=1&sku={sku}"
         },
         "setProductStockLevel": {
           "fullApiUrl": "",
