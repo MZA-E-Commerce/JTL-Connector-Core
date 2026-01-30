@@ -159,19 +159,8 @@ abstract class AbstractController
 
             if (!empty($newProducts)) {
                 try {
-                    $createdIds = $this->bulkCreatePimcoreProducts($newProducts);
-                    $this->loggerService->get('bulk')->error('BULK Created IDs: ' . implode(', ', $createdIds));
-
-                    foreach ($newProducts as $product) {
-                        $sku = $product->getSku();
-                        if (isset($createdIds[$sku])) {
-                            $identity = new Identity($createdIds[$sku], $product->getId()->getHost());
-                            $product->setId($identity);
-                            $existingProducts[] = $product; // Update as well
-                        } else {
-                            $errors[] = 'Product with SKU ' . $sku . ' could not created';
-                        }
-                    }
+                    $this->bulkCreatePimcoreProducts($newProducts);
+                    $this->loggerService->get('bulk')->error('BULK Creation Executed');
                 } catch (\Throwable $e) {
                     $this->loggerService->get('bulk')->error('BULK Create error: ' . $e->getMessage());
                 }
@@ -217,13 +206,15 @@ abstract class AbstractController
                 } catch (\Throwable $e) {
                     $this->loggerService->get('pimcore')->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage() . '. Try to create a new product in Pimcore.');
                     try {
-                        $pimcoreId = $this->createPimcoreProduct($model);
+                        $this->createPimcoreProduct($model);
                     } catch (\Throwable $e) {
                         $this->loggerService->get('pimcore')->error('Error creating Pimcore product: ' . $e->getMessage());
                         continue;
                     }
                 }
 
+                /*
+                 * IS THIS NEEDED?? Where does the pimcore ID go? Where does the Identity go?
                 $identity = new Identity($pimcoreId, $identity->getHost());
                 $model->setId($identity);
 
@@ -238,7 +229,7 @@ abstract class AbstractController
                         'error' => $e->getMessage()
                     ];
                     continue;
-                }
+                }*/
             }
 
             if (!empty($errors)) {
@@ -466,7 +457,7 @@ abstract class AbstractController
      * @throws ServerExceptionInterface
      * @throws TransportExceptionInterface
      */
-    private function createPimcoreProduct(Product $product): int
+    private function createPimcoreProduct(Product $product): void
     {
         $httpMethod = $this->config->get('pimcore.api.endpoints.createProduct.method');
         $client = $this->getHttpClient();
@@ -502,16 +493,16 @@ abstract class AbstractController
 
             $responseData = $response->toArray();
 
-            if ($statusCode === 200 && isset($responseData['success'])
+            if (
+                $statusCode === 200
+                && isset($responseData['success'])
                 && $responseData['success'] === true
-                && !empty($responseData['id'])) {
+            ) {
                 $this->loggerService->get('createPimcoreProduct')->info('Product created successfully in Pimcore (SKU: ' . $product->getSku() . ')');
-                return (int)$responseData['id'];
+                return;
             }
-
             $this->loggerService->get('createPimcoreProduct')->error('Pimcore API error: ' . ($responseData['error'] ?? 'Unknown error'));
             throw new \RuntimeException('Pimcore API error: ' . ($responseData['error'] ?? 'Unknown error'));
-
         } catch (TransportExceptionInterface|HttpExceptionInterface|DecodingExceptionInterface $e) {
             if (method_exists($e, 'getResponse') && $e->getResponse() instanceof \Symfony\Contracts\HttpClient\ResponseInterface) {
                 $errorMessage = $e->getResponse()?->getContent(false);
@@ -619,10 +610,10 @@ abstract class AbstractController
      * @throws TransportExceptionInterface
      * @throws \Throwable
      */
-    protected function bulkCreatePimcoreProducts(array $products): array
+    protected function bulkCreatePimcoreProducts(array $products): void
     {
         if (empty($products)) {
-            return [];
+            return;
         }
 
         $this->loggerService->get('bulk')->info('BULK Create: ' . count($products) . ' Products');
@@ -666,7 +657,7 @@ abstract class AbstractController
             if ($statusCode === 200 && isset($data['success']) && $data['success'] === true) {
                 // Format: { "success": true, "created": { "SKU1": 123, "SKU2": 456 } }
                 $this->loggerService->get('bulk')->info('BULK Create successful: ' . count($data['created'] ?? []) . ' created');
-                return $data['created'] ?? [];
+                return;
             }
 
             throw new \RuntimeException('BULK Create API Error: ' . ($data['error'] ?? 'Unknown error'));
@@ -764,7 +755,7 @@ abstract class AbstractController
             if ($statusCode === 200 && isset($data['success']) && $data['success'] === true) {
                 $this->loggerService->get('bulk')->info(sprintf(
                     'BULK Update successful: %d updated, %d error(s)',
-                    $data['updated'] ?? count($products),
+                    count($products),
                     $data['errors'] ?? 0
                 ));
                 return;
