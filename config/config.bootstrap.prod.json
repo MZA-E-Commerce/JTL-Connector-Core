@@ -51,6 +51,12 @@
           "method": "POST",
           "url": "/bulkGetIds"
         },
+        "bulkDeleteProducts": {
+          "fullApiUrl": "",
+          "ignoreProductNotFound": true,
+          "method": "DELETE",
+          "url": "/bulkDeleteProducts"
+        },
         "bulkCreateProducts": {
           "fullApiUrl": "",
           "method": "POST",

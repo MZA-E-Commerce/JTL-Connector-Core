@@ -25,19 +25,46 @@ class ProductController extends AbstractController implements DeleteInterface
      */
     public function delete(AbstractModel ...$models): array
     {
+        $useBulk = $this->config->get('pimcore.api.useBulk', false);
+
+        // Filter valid Product models
+        $products = [];
         foreach ($models as $model) {
             if (!$model instanceof Product) {
                 $this->logger->error('Invalid model type. Expected Product, got ' . get_class($model));
                 continue;
             }
+            $products[] = $model;
+        }
 
-            $this->logger->info(\sprintf(
-                'Product delete requested (host=%d, sku/endpoint=%s)',
-                $model->getId()->getHost(),
-                $model->getId()->getEndpoint()
+        if (empty($products)) {
+            return $models;
+        }
+
+        if ($useBulk) {
+            $this->loggerService->get('bulk')->info(sprintf(
+                'BULK Delete started: %d product(s)',
+                count($products)
             ));
 
-            $this->deleteProduct($model);
+            try {
+                $this->bulkDeleteProducts($products);
+                $this->loggerService->get('bulk')->info('BULK Delete finished successfully');
+            } catch (\Throwable $e) {
+                $this->loggerService->get('bulk')->error('BULK Delete error: ' . $e->getMessage());
+                throw $e;
+            }
+        } else {
+            // Single delete fallback
+            foreach ($products as $product) {
+                $this->logger->info(\sprintf(
+                    'Product delete requested (host=%d, sku/endpoint=%s)',
+                    $product->getId()->getHost(),
+                    $product->getId()->getEndpoint()
+                ));
+
+                $this->deleteProduct($product);
+            }
         }
 
         return $models;

@@ -768,4 +768,91 @@ abstract class AbstractController
             throw $e;
         }
     }
+
+    /**
+     * Bulk delete products in Pimcore
+     *
+     * @param array $products
+     * @return array Map of SKU => success (true/false)
+     * @throws \Throwable
+     */
+    protected function bulkDeleteProducts(array $products): array
+    {
+        if (empty($products)) {
+            return [];
+        }
+
+        $this->loggerService->get('bulk')->info('BULK Delete: ' . count($products) . ' product(s) received');
+
+        $client = $this->getHttpClient();
+
+        $fullApiUrl = $this->getEndpointUrl('bulkDeleteProducts');
+        $httpMethod = $this->config->get('pimcore.api.endpoints.bulkDeleteProducts.method');
+
+        $ignoreProductNotFound = $this->config->get('pimcore.api.endpoints.bulkDeleteProducts.ignoreProductNotFound', true);
+
+        // Prepare Products for Bulk-Request (deduplicate by jtlId)
+        $bulkData = [];
+        $seenJtlIds = [];
+        foreach ($products as $product) {
+            $jtlId = $product->getId()->getHost();
+
+            // Skip duplicates
+            if (isset($seenJtlIds[$jtlId])) {
+                $this->loggerService->get('bulk')->debug('BULK Delete: Skipping duplicate jtlId ' . $jtlId);
+                continue;
+            }
+            $seenJtlIds[$jtlId] = true;
+
+            $bulkData[] = [
+                'jtlId' => $jtlId,
+                'sku' => $product->getSku() ?: null,
+            ];
+        }
+
+        $duplicatesRemoved = count($products) - count($bulkData);
+        if ($duplicatesRemoved > 0) {
+            $this->loggerService->get('bulk')->info('BULK Delete: Removed ' . $duplicatesRemoved . ' duplicate(s), ' . count($bulkData) . ' unique product(s) to delete');
+        }
+
+        $jsonData = ['products' => $bulkData];
+
+        $this->loggerService->get('bulk')->info(sprintf(
+            'BULK Delete data to send: %s',
+            json_encode($jsonData)
+        ));
+
+        try {
+            $response = $client->request($httpMethod, $fullApiUrl, [
+                'json' => $jsonData
+            ]);
+
+            $statusCode = $response->getStatusCode();
+            $data = $response->toArray();
+
+            if ($statusCode === 200 && isset($data['success']) && $data['success'] === true) {
+                $this->loggerService->get('bulk')->info(sprintf(
+                    'BULK Delete successful: %d deleted, %d error(s)',
+                    $data['deleted'] ?? 0,
+                    $data['errors'] ?? 0
+                ));
+                return $data['results'] ?? [];
+            }
+
+            if ($statusCode === 404 && $ignoreProductNotFound === true) {
+                $this->loggerService->get('bulk')->info('BULK Delete: Some products not found in Pimcore (ignored)');
+                return $data['results'] ?? [];
+            }
+
+            throw new \RuntimeException('BULK Delete API Error: ' . ($data['error'] ?? 'Unknown error'));
+
+        } catch (\Throwable $e) {
+            if ($ignoreProductNotFound && str_contains($e->getMessage(), '404')) {
+                $this->loggerService->get('bulk')->info('BULK Delete: Products not found in Pimcore (ignored)');
+                return [];
+            }
+            $this->loggerService->get('bulk')->error('BULK Delete error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
 }
