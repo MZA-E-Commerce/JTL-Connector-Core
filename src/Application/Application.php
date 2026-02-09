@@ -73,6 +73,7 @@ use Jtl\Connector\Core\Model\Authentication;
 use Jtl\Connector\Core\Model\ConnectorIdentification;
 use Jtl\Connector\Core\Model\Features;
 use Jtl\Connector\Core\Model\Identities;
+use Jtl\Connector\Core\Model\Identity;
 use Jtl\Connector\Core\Model\IdentityInterface;
 use Jtl\Connector\Core\Model\Product;
 use Jtl\Connector\Core\Model\QueryFilter;
@@ -827,6 +828,11 @@ class Application
 
         $eventArgClass = $this->createModelEventClassName($controller);
 
+        // Pre-warm identity cache for push/delete to avoid per-model DB queries
+        if (\in_array($action, [Action::PUSH, Action::DELETE], true)) {
+            $this->warmIdentityCache($params);
+        }
+
         // Identity mapping
         foreach ($params as $param) {
             $eventArg = null;
@@ -875,6 +881,84 @@ class Application
         }
 
         return Request::create($controller, $action, $params);
+    }
+
+    /**
+     * Pre-warms the IdentityLinker cache by bulk-loading all mappings for host IDs found in the given models.
+     *
+     * @param array $params
+     *
+     * @return void
+     */
+    protected function warmIdentityCache(array $params): void
+    {
+        $tStart = microtime(true);
+
+        $hostIds = [];
+        foreach ($params as $param) {
+            if ($param instanceof AbstractModel) {
+                $this->extractIdentityHostIds($param, $hostIds);
+            }
+        }
+
+        if (empty($hostIds)) {
+            return;
+        }
+
+        $hostIds = \array_unique($hostIds);
+        $placeholders = \implode(',', \array_fill(0, \count($hostIds), '?'));
+        $stmt = $this->pdo->prepare(
+            \sprintf('SELECT endpoint, host, type FROM mappings WHERE host IN (%s)', $placeholders)
+        );
+        $stmt->execute(\array_values($hostIds));
+        $mappings = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        /** @var IdentityLinker $identityLinker */
+        $identityLinker = $this->container->get(IdentityLinker::class);
+        $identityLinker->warmCache($mappings);
+
+        $this->loggerService->get(LoggerService::CHANNEL_GLOBAL)->info(\sprintf(
+            '[TIMING] warmIdentityCache: %d host IDs, %d mappings loaded in %.3fs',
+            \count($hostIds),
+            \count($mappings),
+            microtime(true) - $tStart
+        ));
+    }
+
+    /**
+     * Recursively extracts all Identity host IDs from a model and its sub-models.
+     *
+     * @param AbstractModel $model
+     * @param int[]         $hostIds
+     *
+     * @return void
+     */
+    protected function extractIdentityHostIds(AbstractModel $model, array &$hostIds): void
+    {
+        $reflect   = new \ReflectionClass($model);
+        $modelName = $reflect->getShortName();
+
+        foreach ($reflect->getProperties(\ReflectionProperty::IS_PROTECTED) as $propertyInfo) {
+            $propertyName = $propertyInfo->getName();
+            $getter       = \sprintf('get%s', \ucfirst($propertyName));
+
+            if (\is_callable([$model, $getter])) {
+                $value = $model->{$getter}();
+                if (!\is_array($value)) {
+                    $value = [$value];
+                }
+
+                foreach ($value as $entity) {
+                    if ($entity instanceof Identity && Model::isIdentityProperty($modelName, $propertyName)) {
+                        if ($entity->getHost() > 0) {
+                            $hostIds[] = $entity->getHost();
+                        }
+                    } elseif ($entity instanceof AbstractModel) {
+                        $this->extractIdentityHostIds($entity, $hostIds);
+                    }
+                }
+            }
+        }
     }
 
     /**
