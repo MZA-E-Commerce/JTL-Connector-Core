@@ -360,10 +360,13 @@ abstract class AbstractController
                 } else {
                     $uvp = $product->getRecommendedRetailPrice();
                 }
+
                 // Set UVP price
                 $postData['uvp'] = $uvp;
                 break;
         }
+
+        $this->loggerService->get('temp')->info('Post data (' . $fullApiUrl . '): ' . json_encode($postData));
 
         // Tax rate
         $postData['taxRate'] = $product->getVat();
@@ -740,8 +743,8 @@ abstract class AbstractController
         ];
 
         $this->loggerService->get('bulk')->info(sprintf(
-            'BULK post data to send: %s',
-            json_encode($jsonData)
+            'BULK post data to send: %s (%s)',
+            json_encode($jsonData), $type,
         ));
 
         try {
