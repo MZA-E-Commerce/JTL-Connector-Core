@@ -718,6 +718,7 @@ abstract class AbstractController
             if ($useGrossPrices && !is_null($uvp)) {
                 $vat = $product->getVat();
                 $uvp = round($uvp * (1 + $vat / 100), 4);
+                $productData['uvp'] = $uvp;
             } elseif (!$useGrossPrices && !is_null($uvp)) {
                 $productData['uvp'] = $uvp;
             }
