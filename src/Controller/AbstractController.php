@@ -167,7 +167,7 @@ abstract class AbstractController
 
             if (!empty($existingProducts)) {
                 try {
-                    $this->bulkUpdateProductsPimcore($existingProducts);
+                    $this->bulkUpdateProductsPimcore($existingProducts, $this->getUpdateType());
                 } catch (\Throwable $e) {
                     $this->loggerService->get('bulk')->error('BULK Update error: ' . $e->getMessage());
                 }
@@ -403,6 +403,15 @@ abstract class AbstractController
      * @return void
      */
     abstract protected function updateModel(Product $model): void;
+
+    /**
+     * Returns the update type for bulk operations.
+     * Override in child controllers to specify the update type.
+     */
+    protected function getUpdateType(): string
+    {
+        return self::UPDATE_TYPE_PRODUCT;
+    }
 
     private function getSpecialPrice(Product $product): array
     {
@@ -680,13 +689,13 @@ abstract class AbstractController
      * @throws TransportExceptionInterface
      * @throws \Throwable
      */
-    protected function bulkUpdateProductsPimcore(array $products): void
+    protected function bulkUpdateProductsPimcore(array $products, string $type = self::UPDATE_TYPE_PRODUCT): void
     {
         if (empty($products)) {
             return;
         }
 
-        $this->loggerService->get('bulk')->info('BULK Update: ' . count($products) . ' product(s)');
+        $this->loggerService->get('bulk')->info('BULK Update (' . $type . '): ' . count($products) . ' product(s)');
 
         $client = $this->getHttpClient();
 
@@ -708,19 +717,33 @@ abstract class AbstractController
                 'taxRate' => $product->getVat(),
             ];
 
-            $productData['uvp'] = null;
-            $productData['stockLevel'] = $product->getStockLevel();
-            $productData['netPrice'] = $this->getNetPrice($product);
-            $productData['specialPrice'] = $this->getSpecialPrice($product);
+            switch ($type) {
+                case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
+                    $productData['stockLevel'] = $product->getStockLevel();
+                    break;
 
-            $useGrossPrices = $this->config->get('useGrossPrices');
-            $uvp = $product->getRecommendedRetailPrice();
-            if ($useGrossPrices && !is_null($uvp)) {
-                $vat = $product->getVat();
-                $uvp = round($uvp * (1 + $vat / 100), 4);
-                $productData['uvp'] = $uvp;
-            } elseif (!$useGrossPrices && !is_null($uvp)) {
-                $productData['uvp'] = $uvp;
+                case self::UPDATE_TYPE_PRODUCT_PRICE:
+                    $productData['netPrice'] = $this->getNetPrice($product);
+                    $productData['specialPrice'] = $this->getSpecialPrice($product);
+                    break;
+
+                case self::UPDATE_TYPE_PRODUCT:
+                default:
+                    $productData['uvp'] = null;
+                    $productData['stockLevel'] = $product->getStockLevel();
+                    $productData['netPrice'] = $this->getNetPrice($product);
+                    $productData['specialPrice'] = $this->getSpecialPrice($product);
+
+                    $useGrossPrices = $this->config->get('useGrossPrices');
+                    $uvp = $product->getRecommendedRetailPrice();
+                    if ($useGrossPrices && !is_null($uvp)) {
+                        $vat = $product->getVat();
+                        $uvp = round($uvp * (1 + $vat / 100), 4);
+                        $productData['uvp'] = $uvp;
+                    } elseif (!$useGrossPrices && !is_null($uvp)) {
+                        $productData['uvp'] = $uvp;
+                    }
+                    break;
             }
 
             $bulkData[] = $productData;

@@ -17,4 +17,9 @@ class ProductPriceController extends AbstractController
     {
         $this->updateProductPimcore($model, self::UPDATE_TYPE_PRODUCT_PRICE);
     }
+
+    protected function getUpdateType(): string
+    {
+        return self::UPDATE_TYPE_PRODUCT_PRICE;
+    }
 }
