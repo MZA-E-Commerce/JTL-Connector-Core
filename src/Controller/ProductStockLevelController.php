@@ -17,6 +17,11 @@ class ProductStockLevelController extends AbstractController
     {
         $this->updateProductPimcore($model, self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL);
     }
+
+    protected function getUpdateType(): string
+    {
+        return self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL;
+    }
 }
 
 /**
