@@ -634,12 +634,18 @@ class Application
         RequestPacket      $requestPacket,
         Method             $method
     ): ResponsePacket {
+        $tExecuteTotal = microtime(true);
         $modelNamespace = Model::MODEL_NAMESPACE;
         if ($connector instanceof ModelInterface) {
             $modelNamespace = $connector->getModelNamespace();
         }
 
+        $tCreateRequest = microtime(true);
         $request = $this->createHandleRequest($requestPacket, $method, $modelNamespace);
+        $this->loggerService->get(LoggerService::CHANNEL_GLOBAL)->info(sprintf(
+            '[TIMING] execute: createHandleRequest (pre-link + deserialization): %.3fs',
+            microtime(true) - $tCreateRequest
+        ));
         if ($request->getController() === Controller::IMAGE && $request->getAction() === Action::PUSH) {
             /** @var AbstractImage[] $params */
             $params = $request->getParams();
@@ -687,6 +693,8 @@ class Application
             }
             $resultData = [$resultData];
         }
+        $tExecuteLink = microtime(true);
+        $executeLinkCount = 0;
         foreach ($resultData as $result) {
             if (
                 $connector instanceof HandleRequestInterface
@@ -699,6 +707,7 @@ class Application
                     /** @var ChecksumLinker $checksumLinker */
                     $checksumLinker = $this->container->get(ChecksumLinker::class);
                     $checksumLinker->link($result);
+                    $executeLinkCount++;
                 }
             }
 
@@ -740,6 +749,17 @@ class Application
                 $this->eventDispatcher->dispatch($eventArg, $eventName);
             }
         }
+        if ($executeLinkCount > 0) {
+            $this->loggerService->get(LoggerService::CHANNEL_GLOBAL)->info(sprintf(
+                '[TIMING] execute: post-response link loop (%d models): %.3fs',
+                $executeLinkCount, microtime(true) - $tExecuteLink
+            ));
+        }
+
+        $this->loggerService->get(LoggerService::CHANNEL_GLOBAL)->info(sprintf(
+            '[TIMING] execute() TOTAL: %.3fs',
+            microtime(true) - $tExecuteTotal
+        ));
 
         return $this->buildRpcResponse($requestPacket, $response);
     }
@@ -816,12 +836,18 @@ class Application
                     break;
                 case Action::PUSH:
                 case Action::DELETE:
+                    $tPreLink = microtime(true);
                     /** @var IdentityLinker $identityLinker */
                     $identityLinker = $this->container->get(IdentityLinker::class);
                     $identityLinker->linkModel($param);
                     /** @var ChecksumLinker $checksumLinker */
                     $checksumLinker = $this->container->get(ChecksumLinker::class);
                     $checksumLinker->link($param);
+                    $this->loggerService->get(LoggerService::CHANNEL_GLOBAL)->info(sprintf(
+                        '[TIMING] createHandleRequest: pre-action linkModel+checksum for model #%d: %.3fs',
+                        $param instanceof \Jtl\Connector\Core\Model\IdentityInterface ? $param->getId()->getHost() : 0,
+                        microtime(true) - $tPreLink
+                    ));
                     $eventArg = new $eventArgClass($param);
                     break;
                 case Action::PULL:
@@ -1025,23 +1051,46 @@ class Application
                         $controller->beginTransaction();
                     }
 
+                    $tAction = microtime(true);
                     $dataModels = $controller->$action(...$params);
+                    $this->loggerService->get(LoggerService::CHANNEL_GLOBAL)->info(sprintf(
+                        '[TIMING] handleRequest: controller->%s() call: %.3fs (%d models)',
+                        $action, microtime(true) - $tAction, count($dataModels)
+                    ));
 
+                    $tLinkLoop = microtime(true);
+                    $linkCount = 0;
+                    $totalIdentityTime = 0.0;
+                    $totalChecksumTime = 0.0;
+                    $totalCommitTime = 0.0;
                     foreach ($dataModels as $dataModel) {
                         if ($dataModel instanceof AbstractModel) {
                             /** @var IdentityLinker $identityLinker */
                             $identityLinker = $this->container->get(IdentityLinker::class);
+                            $tIdentity = microtime(true);
                             $identityLinker->linkModel($dataModel, ($request->getAction() === Action::DELETE));
+                            $totalIdentityTime += microtime(true) - $tIdentity;
+
                             /** @var ChecksumLinker $checksumLinker */
                             $checksumLinker = $this->container->get(ChecksumLinker::class);
+                            $tChecksum = microtime(true);
                             $checksumLinker->link($dataModel);
+                            $totalChecksumTime += microtime(true) - $tChecksum;
+
+                            $linkCount++;
                         }
                         $result[] = $dataModel;
 
                         if ($controller instanceof TransactionalInterface) {
+                            $tCommit = microtime(true);
                             $controller->commit();
+                            $totalCommitTime += microtime(true) - $tCommit;
                         }
                     }
+                    $this->loggerService->get(LoggerService::CHANNEL_GLOBAL)->info(sprintf(
+                        '[TIMING] handleRequest: post-action link loop (%d models): %.3fs (identity: %.3fs, checksum: %.3fs, commits: %.3fs)',
+                        $linkCount, microtime(true) - $tLinkLoop, $totalIdentityTime, $totalChecksumTime, $totalCommitTime
+                    ));
                 } catch (Throwable $ex) {
                     if ($controller instanceof TransactionalInterface) {
                         $controller->rollback();
