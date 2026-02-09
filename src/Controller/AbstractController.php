@@ -106,6 +106,8 @@ abstract class AbstractController
 
         if ($useBulk) {
 
+            $pushStartTime = microtime(true);
+
             $products = array_filter($models, fn($m) => $m instanceof Product);
             if (empty($products)) {
                 return $models;
@@ -123,7 +125,12 @@ abstract class AbstractController
             }
 
             $skus = array_keys($skuToProduct);
+            $t0 = microtime(true);
             $pimcoreIds = $this->bulkGetPimcoreIds($skus);
+            $this->loggerService->get('bulk')->info(sprintf(
+                '[TIMING] bulkGetPimcoreIds (%d SKUs): %.3fs',
+                count($skus), microtime(true) - $t0
+            ));
 
             $this->loggerService->get('bulk')->info(sprintf(
                 'BULK Got pimcore IDs: %s.',
@@ -158,7 +165,12 @@ abstract class AbstractController
 
             if (!empty($newProducts)) {
                 try {
+                    $t0 = microtime(true);
                     $this->bulkCreatePimcoreProducts($newProducts);
+                    $this->loggerService->get('bulk')->info(sprintf(
+                        '[TIMING] bulkCreatePimcoreProducts (%d products): %.3fs',
+                        count($newProducts), microtime(true) - $t0
+                    ));
                     $this->loggerService->get('bulk')->error('BULK Creation Executed');
                 } catch (\Throwable $e) {
                     $this->loggerService->get('bulk')->error('BULK Create error: ' . $e->getMessage());
@@ -167,11 +179,21 @@ abstract class AbstractController
 
             if (!empty($existingProducts)) {
                 try {
+                    $t0 = microtime(true);
                     $this->bulkUpdateProductsPimcore($existingProducts, $this->getUpdateType());
+                    $this->loggerService->get('bulk')->info(sprintf(
+                        '[TIMING] bulkUpdateProductsPimcore (%d products, type=%s): %.3fs',
+                        count($existingProducts), $this->getUpdateType(), microtime(true) - $t0
+                    ));
                 } catch (\Throwable $e) {
                     $this->loggerService->get('bulk')->error('BULK Update error: ' . $e->getMessage());
                 }
             }
+
+            $this->loggerService->get('bulk')->info(sprintf(
+                '[TIMING] Controller::push() total: %.3fs',
+                microtime(true) - $pushStartTime
+            ));
 
             $this->loggerService->get('bulk')->info(sprintf(
                 'BULK Push finished: %d successful, %d error(s)',
