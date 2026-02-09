@@ -106,7 +106,6 @@ abstract class AbstractController
 
         if ($useBulk) {
 
-
             $products = array_filter($models, fn($m) => $m instanceof Product);
             if (empty($products)) {
                 return $models;
@@ -340,15 +339,15 @@ abstract class AbstractController
                 break;
             case self::UPDATE_TYPE_PRODUCT_PRICE:
                 $this->loggerService->get('updateProductPimcore')->info('Updating product price (SKU: ' . $product->getSku() . ')');
-                $postData['netPrice'] = $this->getNetPrice($product, self::CUSTOMER_TYPE_B2C);
-                $postData['specialPrice'] = $this->getSpecialPrice($product, self::CUSTOMER_TYPE_B2C);
+                $postData['netPrice'] = $this->getNetPrice($product);
+                $postData['specialPrice'] = $this->getSpecialPrice($product);
                 break;
             case self::UPDATE_TYPE_PRODUCT: // Check JTL WaWi setting "Artikel komplett senden"!!
 
                 $this->loggerService->get('updateProductPimcore')->info('Updating product in Pimcore (SKU: ' . $product->getSku() . ')');
 
-                $postData['netPrice'] = $this->getNetPrice($product, self::CUSTOMER_TYPE_B2C);
-                $postData['specialPrice'] = $this->getSpecialPrice($product, self::CUSTOMER_TYPE_B2C);
+                $postData['netPrice'] = $this->getNetPrice($product);
+                $postData['specialPrice'] = $this->getSpecialPrice($product);
 
                 $useGrossPrices = $this->config->get('useGrossPrices');
                 if ($useGrossPrices) {
@@ -405,7 +404,7 @@ abstract class AbstractController
      */
     abstract protected function updateModel(Product $model): void;
 
-    private function getSpecialPrice(Product $product, string $type = self::CUSTOMER_TYPE_B2C): array
+    private function getSpecialPrice(Product $product): array
     {
         $specialPrice = [];
 
@@ -416,7 +415,7 @@ abstract class AbstractController
         foreach ($product->getSpecialPrices() as $priceModel) {
             if ($priceModel->getItems()) {
                 foreach ($priceModel->getItems() as $item) {
-                    if ($item->getCustomerGroupId()->getEndpoint() == $type) {
+                    if ($item->getCustomerGroupId()->getEndpoint() == self::CUSTOMER_TYPE_B2C) {
                         $specialPrice = [
                             'priceNet' => $item->getPriceNet(),
                             'activeFromDate' => $priceModel->getActiveFromDate(),
@@ -433,15 +432,14 @@ abstract class AbstractController
 
     /**
      * @param Product $product
-     * @param string $type
      * @return float|null
      */
-    private function getNetPrice(Product $product, string $type = self::CUSTOMER_TYPE_B2C): ?float
+    private function getNetPrice(Product $product): ?float
     {
         $netPrice = null;
 
         foreach ($product->getPrices() as $priceModel) {
-            if ($priceModel->getCustomerGroupId()->getEndpoint() == $type) {
+            if ($priceModel->getCustomerGroupId()->getEndpoint() == self::CUSTOMER_TYPE_B2C) {
                 foreach ($priceModel->getItems() as $item) {
                     $netPrice = $item->getNetPrice();
                     break 2;
@@ -682,13 +680,13 @@ abstract class AbstractController
      * @throws TransportExceptionInterface
      * @throws \Throwable
      */
-    protected function bulkUpdateProductsPimcore(array $products, string $type = self::UPDATE_TYPE_PRODUCT): void
+    protected function bulkUpdateProductsPimcore(array $products): void
     {
         if (empty($products)) {
             return;
         }
 
-        $this->loggerService->get('bulk')->info('BULK Update: ' . count($products) . ' product(s) (Type: ' . $type . ')');
+        $this->loggerService->get('bulk')->info('BULK Update: ' . count($products) . ' product(s)');
 
         $client = $this->getHttpClient();
 
@@ -698,6 +696,9 @@ abstract class AbstractController
         // Prepare Products for Bulk-Request
         $bulkData = [];
         foreach ($products as $product) {
+            /**
+             * @var $product Product
+             */
             $productData = [
                 'id' => $product->getId()->getEndpoint(),
                 'jtlId' => (string)$product->getId()->getHost(),
@@ -705,46 +706,32 @@ abstract class AbstractController
                 'customerGroup' => self::PIMCORE_CUSTOMER_TYPE_B2C,
                 'jtlShippingClassId' => (int)$product->getShippingClassId()?->getHost(),
                 'taxRate' => $product->getVat(),
-                'uvp' => null,
-                'netPrice' => null,
-                'stockLevel' => null,
             ];
 
-            switch ($type) {
-                case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
-                    $productData['stockLevel'] = $product->getStockLevel();
-                    break;
+            $productData['uvp'] = null;
+            $productData['stockLevel'] = $product->getStockLevel();
+            $productData['netPrice'] = $this->getNetPrice($product);
+            $productData['specialPrice'] = $this->getSpecialPrice($product);
 
-                case self::UPDATE_TYPE_PRODUCT_PRICE:
-                    $productData['netPrice'] = $this->getNetPrice($product, self::CUSTOMER_TYPE_B2C);
-                    $productData['specialPrice'] = $this->getSpecialPrice($product, self::CUSTOMER_TYPE_B2C);
-                    break;
-
-                case self::UPDATE_TYPE_PRODUCT:
-                default:
-                    $productData['netPrice'] = $this->getNetPrice($product, self::CUSTOMER_TYPE_B2C);
-                    $productData['specialPrice'] = $this->getSpecialPrice($product, self::CUSTOMER_TYPE_B2C);
-
-                    $useGrossPrices = $this->config->get('useGrossPrices');
-                    $uvp = $product->getRecommendedRetailPrice();
-                    if ($useGrossPrices && !is_null($uvp)) {
-                        $vat = $product->getVat();
-                        $uvp = round($uvp * (1 + $vat / 100), 4);
-                    }
-                    $productData['uvp'] = $uvp;
-                    break;
+            $useGrossPrices = $this->config->get('useGrossPrices');
+            $uvp = $product->getRecommendedRetailPrice();
+            if ($useGrossPrices && !is_null($uvp)) {
+                $vat = $product->getVat();
+                $uvp = round($uvp * (1 + $vat / 100), 4);
+            } elseif (!$useGrossPrices && !is_null($uvp)) {
+                $productData['uvp'] = $uvp;
             }
+
             $bulkData[] = $productData;
         }
 
         $jsonData = [
-            'products' => $bulkData,
-            'updateType' => $type
+            'products' => $bulkData
         ];
 
         $this->loggerService->get('bulk')->info(sprintf(
             'BULK post data to send: %s (%s)',
-            json_encode($jsonData), $type,
+            json_encode($jsonData), $fullApiUrl
         ));
 
         try {
