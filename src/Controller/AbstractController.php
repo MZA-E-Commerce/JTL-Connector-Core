@@ -750,7 +750,8 @@ abstract class AbstractController
         }
 
         $jsonData = [
-            'products' => $bulkData
+            'products' => $bulkData,
+            'updateType' => $type,
         ];
 
         $this->loggerService->get('bulk')->info(sprintf(
