@@ -541,6 +541,31 @@ class IdentityLinker implements LoggerAwareInterface
     }
 
     /**
+     * Pre-warms the internal cache with bulk-loaded mappings to avoid individual DB queries.
+     *
+     * @param array<array{endpoint: string, host: int, type: int}> $mappings
+     *
+     * @return void
+     * @throws \InvalidArgumentException
+     */
+    public function warmCache(array $mappings): void
+    {
+        foreach ($mappings as $mapping) {
+            $endpoint     = (string)$mapping['endpoint'];
+            $hostId       = (int)$mapping['host'];
+            $identityType = (int)$mapping['type'];
+
+            $this->saveCache($endpoint, $hostId, $identityType, self::CACHE_TYPE_HOST);
+            $this->saveCache($endpoint, $hostId, $identityType, self::CACHE_TYPE_ENDPOINT);
+        }
+
+        $this->logger->info(
+            'warmCache: loaded {count} mappings into cache',
+            ['count' => \count($mappings)]
+        );
+    }
+
+    /**
      * Clears the entire link table
      *
      * @param int|null $identityType

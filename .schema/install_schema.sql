@@ -26,3 +26,6 @@ CREATE TABLE IF NOT EXISTS `category_translations`
     PRIMARY KEY (`category_id`, `language_iso`),
     FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION
 );
+
+ALTER TABLE `mappings` ADD UNIQUE INDEX `idx_type_host` (`type`, `host`);
+ALTER TABLE `mappings` ADD INDEX `idx_host` (`host`);
