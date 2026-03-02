@@ -158,6 +158,25 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $order->setShippingMethodName($orderData['delivery']['shippingMethod']);
                 }
 
+                if (!empty($orderData['batteryDepositCosts'])) {
+                    $batteryDepositCostsSinglePriceGross = (float)$this->config->get('batteryDepositCostsItems.singlePrice', 7.50);
+                    $batteryDepositCostsSingleSku = (float)$this->config->get('batteryDepositCostsItems.sku', 'BATTERIEPFAND01');
+                    $batteryDepositCostsSingleName = (float)$this->config->get('batteryDepositCostsItems.name', 'Batteriepfand');
+                    $batteryDepositCostsSingleVat = (float)$this->config->get('batteryDepositCostsItems.vat', 19);
+                    $batteryDepositAmount = round($orderData['batteryDepositCosts'] / $batteryDepositCostsSinglePriceGross, 2);
+
+                    $batteryDepositCostsOrderItem = new CustomerOrderItem();
+                    $batteryDepositCostsOrderItem->setSku($batteryDepositCostsSingleSku);
+                    $batteryDepositCostsOrderItem->setName($batteryDepositCostsSingleName);
+                    $batteryDepositCostsOrderItem->setType(CustomerOrderItem::TYPE_PRODUCT);
+                    $batteryDepositCostsOrderItem->setQuantity($batteryDepositAmount);
+                    $batteryDepositCostsOrderItem->setPriceGross($batteryDepositCostsSinglePriceGross);
+                    $batteryDepositCostsSinglePriceNet = $batteryDepositCostsSinglePriceGross / (1 + $batteryDepositCostsSingleVat / 100);
+                    $batteryDepositCostsOrderItem->setPrice($batteryDepositCostsSinglePriceNet);
+                    $batteryDepositCostsOrderItem->setVat($batteryDepositCostsSingleVat);
+                    $order->addItem($batteryDepositCostsOrderItem);
+                }
+
                 // Items
                 foreach ($orderData['items'] as $item) {
 
