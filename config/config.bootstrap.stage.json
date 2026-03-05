@@ -46,6 +46,7 @@
   "pimcore": {
     "api": {
       "useBulk": true,
+      "specialPriceUpdateDisabled": false,
       "url": "http://mza2-nginx/api/jtl/connector",
       "key": "xxx",
       "auth": {
