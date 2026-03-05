@@ -717,6 +717,8 @@ abstract class AbstractController
             return;
         }
 
+        $specialPriceUpdateDisabled = $this->config->get('pimcore.api.specialPriceUpdateDisabled', false);
+
         $this->loggerService->get('bulk')->info('BULK Update (' . $type . '): ' . count($products) . ' product(s)');
 
         $client = $this->getHttpClient();
@@ -746,7 +748,11 @@ abstract class AbstractController
 
                 case self::UPDATE_TYPE_PRODUCT_PRICE:
                     $productData['netPrice'] = $this->getNetPrice($product);
-                    $productData['specialPrice'] = $this->getSpecialPrice($product);
+
+                    $productData['specialPrice'] = [];
+                    if ($specialPriceUpdateDisabled === false) {
+                        $productData['specialPrice'] = $this->getSpecialPrice($product);
+                    }
                     break;
 
                 case self::UPDATE_TYPE_PRODUCT:
@@ -754,7 +760,11 @@ abstract class AbstractController
                     $productData['uvp'] = null;
                     $productData['stockLevel'] = $product->getStockLevel();
                     $productData['netPrice'] = $this->getNetPrice($product);
-                    $productData['specialPrice'] = $this->getSpecialPrice($product);
+
+                    $productData['specialPrice'] = [];
+                    if ($specialPriceUpdateDisabled === false) {
+                        $productData['specialPrice'] = $this->getSpecialPrice($product);
+                    }
 
                     $useGrossPrices = $this->config->get('useGrossPrices');
                     $uvp = $product->getRecommendedRetailPrice();

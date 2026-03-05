@@ -22,6 +22,13 @@
       "paylater-installment": "Ratenkauf"
     }
   },
+  "batteryDepositCostsItems": {
+    "singlePrice": 7.50,
+    "sku": "BATTERIEPFAND01",
+    "name": "Batteriepfand",
+    "description": "Batteriepfand",
+    "vat": 19
+  },
   "shipping": {
     "methods": {
       "V01PAK": "11",
@@ -39,6 +46,7 @@
   "pimcore": {
     "api": {
       "useBulk": true,
+      "specialPriceUpdateDisabled": false,
       "url": "http://mza2-nginx/api/jtl/connector",
       "key": "xxx",
       "auth": {
