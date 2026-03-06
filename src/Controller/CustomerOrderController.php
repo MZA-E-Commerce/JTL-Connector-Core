@@ -161,7 +161,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 if (!empty($orderData['batteryDepositCosts'])) {
                     $batteryDepositCostsSinglePriceGross = (float)$this->config->get('batteryDepositCostsItems.singlePrice', 7.50);
                     $batteryDepositCostsSingleSku = $this->config->get('batteryDepositCostsItems.sku', 'BATTERIEPFAND01');
-                    $batteryDepositCostsSingleName = $this->config->get('batteryDepositCostsItems.name', 'BATTERIEPFAND01');
+                    $batteryDepositCostsSingleName = $this->config->get('batteryDepositCostsItems.name', 'Batteriepfand');
                     $batteryDepositCostsSingleVat = (float)$this->config->get('batteryDepositCostsItems.vat', 19);
                     $batteryDepositAmount = round($orderData['batteryDepositCosts'] / $batteryDepositCostsSinglePriceGross, 2);
 
