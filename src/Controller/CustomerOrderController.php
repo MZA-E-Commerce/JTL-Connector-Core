@@ -193,8 +193,8 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $customerOrderItem->setName($item['name']);
                     $customerOrderItem->setType(CustomerOrderItem::TYPE_PRODUCT);
                     $customerOrderItem->setQuantity((float)$item['quantity']);
-                    $customerOrderItem->setPriceGross((float)$item['totalPrice']);
-                    $customerOrderItem->setPrice((float)$item['totalPriceNet']);
+                    $customerOrderItem->setPriceGross((float)$item['singlePrice']);
+                    $customerOrderItem->setPrice((float)$item['singlePriceNet']);
                     $customerOrderItem->setVat((float)$item['vat']);
                     $order->addItem($customerOrderItem);
                 }
