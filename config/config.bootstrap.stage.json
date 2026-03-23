@@ -115,6 +115,11 @@
           "ignoreProductNotFound": true,
           "method": "DELETE",
           "url": "/deleteProduct"
+        },
+        "getPayments": {
+          "fullApiUrl": "",
+          "method": "GET",
+          "url": "/getPayments"
         }
       }
     }
