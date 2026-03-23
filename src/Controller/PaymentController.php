@@ -7,11 +7,38 @@ use Jtl\Connector\Core\Model\Payment;
 use Jtl\Connector\Core\Model\Product;
 use Jtl\Connector\Core\Model\QueryFilter;
 
-class PaymentController extends AbstractController implements PullInterface
+class PaymentController extends AbstractController implements PullInterface, StatisticInterface
 {
     protected function updateModel(Product $model): void
     {
         // not needed for payments
+    }
+
+    public function statistic(QueryFilter $queryFilter): int
+    {
+        $endpointUrl = $this->getEndpointUrl('getPayments');
+        $client = $this->getHttpClient();
+
+        try {
+            $response = $client->request('GET', $endpointUrl);
+
+            $statusCode = $response->getStatusCode();
+            $data = $response->toArray();
+
+            if ($statusCode !== 200 || !isset($data['success']) || $data['success'] !== true) {
+                $this->logger->error('Pimcore getPayments error (statistic)!');
+                return 0;
+            }
+
+            $count = count($data['payments'] ?? []);
+            $this->logger->info('paymentStatistic: ' . $count . ' payment(s) available');
+
+            return $count;
+
+        } catch (\Throwable $e) {
+            $this->loggerService->get('paymentStatistic')->error('HTTP request failed: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     public function pull(QueryFilter $queryFilter): array
@@ -54,7 +81,13 @@ class PaymentController extends AbstractController implements PullInterface
 
                 $payments[] = $payment;
 
-                $this->logger->info('Payment pulled for order ' . ($paymentData['orderNumber'] ?? '') . ' with transactionId: ' . $transactionId);
+                $this->loggerService->get('paymentPull')->info('Payment pulled', [
+                    'orderNumber' => $paymentData['orderNumber'] ?? '',
+                    'pimId' => $paymentData['pimId'] ?? '',
+                    'transactionId' => $transactionId,
+                    'paymentModuleCode' => $paymentCode,
+                    'totalSum' => (float)($paymentData['totalSumGross'] ?? 0.0),
+                ]);
             }
 
         } catch (\Throwable $e) {
