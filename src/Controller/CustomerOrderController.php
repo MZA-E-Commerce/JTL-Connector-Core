@@ -8,11 +8,14 @@ use Jtl\Connector\Core\Model\CustomerOrderItem;
 use Jtl\Connector\Core\Model\CustomerOrderShippingAddress;
 use Jtl\Connector\Core\Model\Identity;
 use Jtl\Connector\Core\Model\KeyValueAttribute;
+use Jtl\Connector\Core\Model\Payment;
 use Jtl\Connector\Core\Model\Product;
 use Jtl\Connector\Core\Model\QueryFilter;
 
 class CustomerOrderController extends AbstractController implements PullInterface
 {
+    /** @var Payment[] */
+    private static array $pulledPayments = [];
     public function pull(QueryFilter $queryFilter): array
     {
         $endpointUrl = $this->getEndpointUrl('getOrders');
@@ -207,6 +210,23 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 $paymentCode = $this->getPaymentCode($orderData['paymentInfo'] ?? []);
                 $order->setPaymentModuleCode($paymentCode);
 
+                // Create Payment object for JTL WaWi (transactionId)
+                $transactionId = $orderData['paymentInfo']['transactionId'] ?? '';
+                if (!empty($transactionId)) {
+                    $payment = new Payment();
+                    $payment->setId(new Identity((string)$orderData['pimId'], 0));
+                    $payment->setCustomerOrderId(new Identity((string)$orderData['pimId'], 0));
+                    $payment->setTransactionId($transactionId);
+                    $payment->setPaymentModuleCode($paymentCode);
+                    $payment->setTotalSum((float)($orderData['totalSumGross'] ?? 0.0));
+                    $payment->setCreationDate(
+                        \DateTime::createFromFormat('U', (string)$orderData['orderDateUnix']) ?: null
+                    );
+                    self::$pulledPayments[] = $payment;
+
+                    $this->logger->info('Payment created for order ' . $orderData['orderNumber'] . ' with transactionId: ' . $transactionId);
+                }
+
                 $orders[] = $order;
             }
 
@@ -308,6 +328,19 @@ class CustomerOrderController extends AbstractController implements PullInterfac
         ];
 
         return in_array($isoCountryCode, $euCountries, true);
+    }
+
+    /**
+     * @return Payment[]
+     */
+    public static function getPulledPayments(): array
+    {
+        return self::$pulledPayments;
+    }
+
+    public static function clearPulledPayments(): void
+    {
+        self::$pulledPayments = [];
     }
 
     protected function updateModel(Product $model): void
