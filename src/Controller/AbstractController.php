@@ -92,6 +92,18 @@ abstract class AbstractController
     }
 
     /**
+     * Check whether the current request is served by the GLOBAL domain.
+     * The GLOBAL connector is exclusively responsible for stock-level pushes;
+     * all other product-related pushes (product data, prices) are handled
+     * by the non-GLOBAL (PIMCORE) connector.
+     */
+    protected function isGlobalDomain(): bool
+    {
+        $domain = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+        return stripos($domain, 'global') !== false;
+    }
+
+    /**
      * Template‑Method for all Controllers
      *
      * @param AbstractModel ...$models

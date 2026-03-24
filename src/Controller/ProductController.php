@@ -15,6 +15,19 @@ class ProductController extends AbstractController implements DeleteInterface
         parent::__construct($config, $logger, $loggerService);
     }
 
+    /**
+     * The GLOBAL domain must not push product data to Pimcore (only stock levels).
+     */
+    public function push(AbstractModel ...$models): array
+    {
+        if ($this->isGlobalDomain()) {
+            $this->logger->info('Product push skipped: the GLOBAL domain only pushes stock levels, not product data.');
+            return $models;
+        }
+
+        return parent::push(...$models);
+    }
+
     protected function updateModel(Product $model): void
     {
         $this->updateProductPimcore($model);
