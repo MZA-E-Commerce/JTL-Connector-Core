@@ -188,7 +188,8 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $customerOrderItem = new CustomerOrderItem();
 
                     // Please check Dropshipping Connector! We need JTL-ID and set it to
-                    $customerOrderItem->setProductId(new Identity($item['jtlId'], 0));
+                    #$customerOrderItem->setProductId(new Identity($item['jtlId'], 0));
+
                     $customerOrderItem->setSku($item['sku']);
                     $customerOrderItem->setName($item['name']);
                     $customerOrderItem->setType(CustomerOrderItem::TYPE_PRODUCT);
