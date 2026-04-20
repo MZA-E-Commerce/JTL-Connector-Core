@@ -15,6 +15,7 @@
     "paymentMethods": {
       "prepayment": "Vorkasse",
       "card": "Kreditkarte",
+      "credit_card": "Kreditkarte",
       "paypal": "PayPal",
       "invoice": "Rechnung",
       "installment": "Ratenkauf",

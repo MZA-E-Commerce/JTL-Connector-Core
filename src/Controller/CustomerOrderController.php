@@ -121,18 +121,30 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 }
 
                 // Shipping address
-                $shippingStreet = !empty($orderData['delivery']['street']) ? $orderData['delivery']['street'] : '';
-                $shippingHouseNumber = !empty($orderData['delivery']['houseNumber']) ? ' ' . $orderData['delivery']['houseNumber'] : '';
-                $shippingStreetWithHouseNumber = $shippingStreet . $shippingHouseNumber;
+                $isPackstation = !empty($orderData['delivery']['locationName']) && !empty($orderData['delivery']['postNumber']);
                 $shippingAddress = new CustomerOrderShippingAddress();
-                $shippingAddress->setCountryIso(!empty($orderData['delivery']['country']) ? $orderData['delivery']['country'] : 'DE');
-                $shippingAddress->setFirstName(!empty($orderData['delivery']['firstName']) ? $orderData['delivery']['firstName'] : '');
-                $shippingAddress->setLastName(!empty($orderData['delivery']['lastName']) ? $orderData['delivery']['lastName'] : '');
-                $shippingAddress->setCompany(!empty($orderData['delivery']['company']) ? $orderData['delivery']['company'] : '');
-                //$shippingAddress->setExtraAddressLine(!empty($orderData['delivery']['extraAddressLine']) ? $orderData['delivery']['extraAddressLine'] : '');
-                $shippingAddress->setCity(!empty($orderData['delivery']['city']) ? $orderData['delivery']['city'] : '');
-                $shippingAddress->setStreet($shippingStreetWithHouseNumber);
-                $shippingAddress->setZipCode(!empty($orderData['delivery']['zip']) ? $orderData['delivery']['zip'] : '');
+
+                if ($isPackstation) {
+                    $shippingAddress->setFirstName(!empty($orderData['customer']['firstName']) ? $orderData['customer']['firstName'] : '');
+                    $shippingAddress->setLastName(!empty($orderData['customer']['lastName']) ? $orderData['customer']['lastName'] : '');
+                    $shippingAddress->setCompany(!empty($orderData['customer']['company']) ? $orderData['customer']['company'] : '');
+                    $shippingAddress->setStreet(!empty($orderData['delivery']['locationName']) ? $orderData['delivery']['locationName'] : '');
+                    $shippingAddress->setExtraAddressLine(!empty($orderData['delivery']['postNumber']) ? $orderData['delivery']['postNumber'] : '');
+                    $shippingAddress->setZipCode(!empty($orderData['delivery']['zip']) ? $orderData['delivery']['zip'] : '');
+                    $shippingAddress->setCity(!empty($orderData['delivery']['city']) ? $orderData['delivery']['city'] : '');
+                    $shippingAddress->setCountryIso(!empty($orderData['delivery']['country']) ? $orderData['delivery']['country'] : 'DE');
+                } else {
+                    $shippingStreet = !empty($orderData['delivery']['street']) ? $orderData['delivery']['street'] : '';
+                    $shippingHouseNumber = !empty($orderData['delivery']['houseNumber']) ? ' ' . $orderData['delivery']['houseNumber'] : '';
+                    $shippingStreetWithHouseNumber = $shippingStreet . $shippingHouseNumber;
+                    $shippingAddress->setFirstName(!empty($orderData['delivery']['firstName']) ? $orderData['delivery']['firstName'] : '');
+                    $shippingAddress->setLastName(!empty($orderData['delivery']['lastName']) ? $orderData['delivery']['lastName'] : '');
+                    $shippingAddress->setCompany(!empty($orderData['delivery']['company']) ? $orderData['delivery']['company'] : '');
+                    $shippingAddress->setStreet($shippingStreetWithHouseNumber);
+                    $shippingAddress->setZipCode(!empty($orderData['delivery']['zip']) ? $orderData['delivery']['zip'] : '');
+                    $shippingAddress->setCity(!empty($orderData['delivery']['city']) ? $orderData['delivery']['city'] : '');
+                    $shippingAddress->setCountryIso(!empty($orderData['delivery']['country']) ? $orderData['delivery']['country'] : 'DE');
+                }
                 $shippingAddress->setEMail($email);
                 $shippingAddress->setCustomerId(new Identity($orderData['customer']['id']??'', 0));
                 $order->setShippingAddress($shippingAddress);
