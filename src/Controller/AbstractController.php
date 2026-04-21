@@ -363,7 +363,8 @@ abstract class AbstractController
             'netPrice' => null,
             'stockLevel' => null,
             'customerGroup' => self::PIMCORE_CUSTOMER_TYPE_B2C,
-            'jtlShippingClassId' => (int)$product->getShippingClassId()?->getHost()
+            'jtlShippingClassId' => (int)$product->getShippingClassId()?->getHost(),
+            'isFromGlobalConnector' => $this->isGlobalDomain(),
         ];
 
         switch ($type) {
@@ -751,6 +752,7 @@ abstract class AbstractController
                 'customerGroup' => self::PIMCORE_CUSTOMER_TYPE_B2C,
                 'jtlShippingClassId' => (int)$product->getShippingClassId()?->getHost(),
                 'taxRate' => $product->getVat(),
+                'isFromGlobalConnector' => $this->isGlobalDomain(),
             ];
 
             switch ($type) {
