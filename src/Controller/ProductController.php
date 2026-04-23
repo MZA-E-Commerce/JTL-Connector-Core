@@ -20,11 +20,6 @@ class ProductController extends AbstractController implements DeleteInterface
      */
     public function push(AbstractModel ...$models): array
     {
-        if ($this->isGlobalDomain()) {
-            $this->logger->info('Product push skipped: the GLOBAL domain only pushes stock levels, not product data.');
-            return $models;
-        }
-
         return parent::push(...$models);
     }
 

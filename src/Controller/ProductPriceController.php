@@ -19,11 +19,6 @@ class ProductPriceController extends AbstractController
      */
     public function push(AbstractModel ...$models): array
     {
-        if ($this->isGlobalDomain()) {
-            $this->logger->info('ProductPrice push skipped: the GLOBAL domain only pushes stock levels, not prices.');
-            return $models;
-        }
-
         return parent::push(...$models);
     }
 

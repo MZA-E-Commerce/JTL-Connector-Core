@@ -15,22 +15,17 @@ class ProductStockLevelController extends AbstractController
     }
 
     /**
-     * Only the GLOBAL domain is allowed to push stock levels to Pimcore.
-     * All other domains skip this push silently.
+     * Only the GLOBAL connector is allowed to push stock levels to Pimcore.
      */
     public function push(AbstractModel ...$models): array
     {
-        if (!$this->isGlobalDomain()) {
-            $this->logger->info('ProductStockLevel push skipped: only the GLOBAL domain may push stock levels to Pimcore.');
-            return $models;
-        }
-
-        return parent::push(...$models);
+        // Only the GLOBAL connector is allowed to push stock levels to Pimcore.
+        return $models;
     }
 
     protected function updateModel(Product $model): void
     {
-        $this->updateProductPimcore($model, self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL);
+        // Only the GLOBAL connector is allowed to push stock levels to Pimcore.
     }
 
     protected function getUpdateType(): string
@@ -38,18 +33,3 @@ class ProductStockLevelController extends AbstractController
         return self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL;
     }
 }
-
-/**
- * Example JSON of product data:
-[
-	{
-        "id":
-		[
-            "",
-            4955
-        ],
-		"sku": "83152-A-L",
-		"stockLevel": 86
-	}
-]
-*/
