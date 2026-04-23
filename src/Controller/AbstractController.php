@@ -92,18 +92,6 @@ abstract class AbstractController
     }
 
     /**
-     * Check whether the current request is served by the GLOBAL domain.
-     * The GLOBAL connector is exclusively responsible for stock-level pushes;
-     * all other product-related pushes (product data, prices) are handled
-     * by the non-GLOBAL (PIMCORE) connector.
-     */
-    protected function isGlobalDomain(): bool
-    {
-        $domain = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
-        return stripos($domain, 'global') !== false;
-    }
-
-    /**
      * Template‑Method for all Controllers
      *
      * @param AbstractModel ...$models
@@ -364,14 +352,9 @@ abstract class AbstractController
             'stockLevel' => null,
             'customerGroup' => self::PIMCORE_CUSTOMER_TYPE_B2C,
             'jtlShippingClassId' => (int)$product->getShippingClassId()?->getHost(),
-            'isFromGlobalConnector' => $this->isGlobalDomain(),
         ];
 
         switch ($type) {
-            case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
-                $this->loggerService->get('updateProductPimcore')->info('Updating product stock level (SKU: ' . $product->getSku() . ')');
-                $postData['stockLevel'] = $product->getStockLevel();
-                break;
             case self::UPDATE_TYPE_PRODUCT_PRICE:
                 $this->loggerService->get('updateProductPimcore')->info('Updating product price (SKU: ' . $product->getSku() . ')');
                 $postData['netPrice'] = $this->getNetPrice($product);
@@ -752,14 +735,9 @@ abstract class AbstractController
                 'customerGroup' => self::PIMCORE_CUSTOMER_TYPE_B2C,
                 'jtlShippingClassId' => (int)$product->getShippingClassId()?->getHost(),
                 'taxRate' => $product->getVat(),
-                'isFromGlobalConnector' => $this->isGlobalDomain(),
             ];
 
             switch ($type) {
-                case self::UPDATE_TYPE_PRODUCT_STOCK_LEVEL:
-                    $productData['stockLevel'] = $product->getStockLevel();
-                    break;
-
                 case self::UPDATE_TYPE_PRODUCT_PRICE:
                     $productData['netPrice'] = $this->getNetPrice($product);
 
@@ -768,9 +746,7 @@ abstract class AbstractController
                         $productData['specialPrice'] = $this->getSpecialPrice($product);
                     }
                     break;
-
                 case self::UPDATE_TYPE_PRODUCT:
-                default:
                     $productData['uvp'] = null;
                     $productData['stockLevel'] = $product->getStockLevel();
                     $productData['netPrice'] = $this->getNetPrice($product);
@@ -790,8 +766,9 @@ abstract class AbstractController
                         $productData['uvp'] = $uvp;
                     }
                     break;
+                default:
+                    return;
             }
-
             $bulkData[] = $productData;
         }
 
