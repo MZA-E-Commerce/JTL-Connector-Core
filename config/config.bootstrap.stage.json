@@ -30,6 +30,7 @@
     "vat": 19
   },
   "shipping": {
+    "setShippingMethod": true,
     "methods": {
       "V01PAK": "11",
       "V54EPAK": "12",

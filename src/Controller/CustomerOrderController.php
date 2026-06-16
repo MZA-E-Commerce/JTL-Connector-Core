@@ -163,11 +163,14 @@ class CustomerOrderController extends AbstractController implements PullInterfac
 
                 $order->setBillingAddress($billingAddress);
 
-                $shippingMethodId = $this->determineShippingMethodId($orderData['delivery']['shippingMethod'], $isClickAndCollect);
-                if (!empty($shippingMethodId)) {
-                    $shippingMethodIdentity = new Identity('', (int)$shippingMethodId);
-                    $order->setShippingMethodId($shippingMethodIdentity);
-                    $order->setShippingMethodName($orderData['delivery']['shippingMethod']);
+                $setShippingMethod = $this->config->get('shipping.methods.setShippingMethod', false);
+                if ($setShippingMethod === true) {
+                    $shippingMethodId = $this->determineShippingMethodId($orderData['delivery']['shippingMethod'], $isClickAndCollect);
+                    if (!empty($shippingMethodId)) {
+                        $shippingMethodIdentity = new Identity('', (int)$shippingMethodId);
+                        $order->setShippingMethodId($shippingMethodIdentity);
+                        $order->setShippingMethodName($orderData['delivery']['shippingMethod']);
+                    }
                 }
 
                 if (!empty($orderData['batteryDepositCosts'])) {
