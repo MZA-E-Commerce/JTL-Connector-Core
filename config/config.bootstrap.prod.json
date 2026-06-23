@@ -45,6 +45,11 @@
       "description": "Frachtkosten"
     }
   },
+  "coupons": {
+    "enabled": false,
+    "namePrefix": "Gutschein",
+    "sku": ""
+  },
   "pimcore": {
     "api": {
       "useBulk": true,
