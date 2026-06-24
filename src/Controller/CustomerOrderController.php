@@ -87,39 +87,6 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $order->addAttribute($attributeIdRegionalprovision);
                 }
 
-                if (!empty($orderData['delivery']['shippingMethod'])) {
-                    $attributeShippingMethod = new KeyValueAttribute();
-                    $attributeShippingMethod->setKey('Versandart');
-                    $attributeShippingMethod->setValue($orderData['delivery']['shippingMethod']);
-                    $order->addAttribute($attributeShippingMethod);
-                }
-
-                // OnlineShopShipping data (deliveryMethod, fulfillmentMethod, shippingProvider, identifier)
-                if (!empty($orderData['delivery']['onlineShopShipping']['identifier'])) {
-                    $attributeOnlineShopShippingIdentifier = new KeyValueAttribute();
-                    $attributeOnlineShopShippingIdentifier->setKey('onlineShopShippingIdentifier');
-                    $attributeOnlineShopShippingIdentifier->setValue($orderData['delivery']['onlineShopShipping']['identifier']);
-                    $order->addAttribute($attributeOnlineShopShippingIdentifier);
-                }
-                if (!empty($orderData['delivery']['onlineShopShipping']['deliveryMethod'])) {
-                    $attributeOnlineShopShippingDeliveryMethod = new KeyValueAttribute();
-                    $attributeOnlineShopShippingDeliveryMethod->setKey('onlineShopShippingDeliveryMethod');
-                    $attributeOnlineShopShippingDeliveryMethod->setValue($orderData['delivery']['onlineShopShipping']['deliveryMethod']);
-                    $order->addAttribute($attributeOnlineShopShippingDeliveryMethod);
-                }
-                if (!empty($orderData['delivery']['onlineShopShipping']['fulfillmentMethod'])) {
-                    $attributeOnlineShopShippingFulfillmentMethod = new KeyValueAttribute();
-                    $attributeOnlineShopShippingFulfillmentMethod->setKey('onlineShopShippingFulfillmentMethod');
-                    $attributeOnlineShopShippingFulfillmentMethod->setValue($orderData['delivery']['onlineShopShipping']['fulfillmentMethod']);
-                    $order->addAttribute($attributeOnlineShopShippingFulfillmentMethod);
-                }
-                if (!empty($orderData['delivery']['onlineShopShipping']['shippingProvider'])) {
-                    $attributeOnlineShopShippingShippingProvider = new KeyValueAttribute();
-                    $attributeOnlineShopShippingShippingProvider->setKey('onlineShopShippingShippingProvider');
-                    $attributeOnlineShopShippingShippingProvider->setValue($orderData['delivery']['onlineShopShipping']['shippingProvider']);
-                    $order->addAttribute($attributeOnlineShopShippingShippingProvider);
-                }
-
                 // Shipping address
                 $isPackstation = !empty($orderData['delivery']['locationName']) && !empty($orderData['delivery']['postNumber']);
                 $shippingAddress = new CustomerOrderShippingAddress();
@@ -216,6 +183,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                 }
 
                 $order = $this->addShippingCostItem($order, $orderData);
+                $order = $this->addCouponItems($order, $orderData);
 
                 $order->setTotalSum($orderData['totalSum']);
                 $order->setTotalSumGross($orderData['totalSumGross']);
@@ -291,6 +259,148 @@ class CustomerOrderController extends AbstractController implements PullInterfac
             ]
         );
         return $order;
+    }
+
+    /**
+     * Add applied discount coupons as negative coupon order items.
+     *
+     * Each coupon is split per VAT rate so the net tax base of every rate is
+     * reduced correctly (required for mixed-VAT baskets, e.g. 19% + 7%).
+     *
+     * Expected Pimcore payload per order:
+     *   "coupons": [
+     *     {
+     *       "code": "SOMMER10",
+     *       "breakdown": [                       // preferred: pre-split by Pimcore
+     *         { "vat": 19.0, "discountNet": -10.00, "discountGross": -11.90 },
+     *         { "vat": 7.0,  "discountNet": -10.00, "discountGross": -10.70 }
+     *       ]
+     *       // fallback if no breakdown is given:
+     *       // "discountGross": -22.60
+     *     }
+     *   ]
+     *
+     * @param CustomerOrder $order
+     * @param array $orderData
+     * @return CustomerOrder
+     */
+    private function addCouponItems(CustomerOrder $order, array $orderData): CustomerOrder
+    {
+        if ($this->config->get('coupons.enabled', false) !== true) {
+            return $order;
+        }
+
+        $coupons = $orderData['coupons'] ?? [];
+        if (empty($coupons)) {
+            return $order;
+        }
+
+        $namePrefix = $this->config->get('coupons.namePrefix', 'Gutschein');
+        $sku        = $this->config->get('coupons.sku', '');
+
+        foreach ($coupons as $coupon) {
+            $code = $coupon['code'] ?? '';
+
+            // 1) Preferred: Pimcore already delivers the per-VAT breakdown.
+            $breakdown = $coupon['breakdown'] ?? null;
+
+            // 2) Fallback: only a total gross discount -> split it across the
+            //    product items' gross sums per VAT rate.
+            if (empty($breakdown)) {
+                $totalGross = isset($coupon['discountGross']) ? -abs((float)$coupon['discountGross']) : 0.0;
+                if ($totalGross === 0.0) {
+                    $this->logger->warning('Coupon without usable amount skipped', [
+                        'orderNumber' => $order->getOrderNumber(),
+                        'code' => $code,
+                    ]);
+                    continue;
+                }
+                $breakdown = $this->splitDiscountByVat($totalGross, $order);
+            }
+
+            foreach ($breakdown as $part) {
+                $vat   = (float)($part['vat'] ?? 0.0);
+                $gross = -abs((float)($part['discountGross'] ?? 0.0));
+                if ($gross === 0.0) {
+                    continue;
+                }
+                // Prefer Pimcore's net; otherwise derive it from gross + vat.
+                $net = isset($part['discountNet'])
+                    ? -abs((float)$part['discountNet'])
+                    : round($gross / (1 + $vat / 100), 4);
+
+                $couponItem = new CustomerOrderItem();
+                $couponItem->setType(CustomerOrderItem::TYPE_COUPON);
+                $couponItem->setName(trim($namePrefix . ' ' . $code));
+                $couponItem->setNote($code);
+                if ($sku !== '') {
+                    $couponItem->setSku($sku);
+                }
+                $couponItem->setQuantity(1.0);
+                $couponItem->setPriceGross($gross);
+                $couponItem->setPrice($net);
+                $couponItem->setVat($vat);
+                $order->addItem($couponItem);
+
+                $this->logger->info('Added coupon item to order', [
+                    'orderNumber' => $order->getOrderNumber(),
+                    'code' => $code,
+                    'vat' => $vat,
+                    'gross' => $gross,
+                    'net' => $net,
+                ]);
+            }
+        }
+
+        return $order;
+    }
+
+    /**
+     * Distribute a total gross discount proportionally across the VAT rates of
+     * the order's product items. The last bucket absorbs the rounding remainder
+     * so the sum stays exact.
+     *
+     * @param float $totalGross Negative total gross discount
+     * @param CustomerOrder $order
+     * @return array<int, array{vat: float, discountGross: float}>
+     */
+    private function splitDiscountByVat(float $totalGross, CustomerOrder $order): array
+    {
+        $grossPerVat = [];
+        foreach ($order->getItems() as $item) {
+            if ($item->getType() !== CustomerOrderItem::TYPE_PRODUCT) {
+                continue;
+            }
+            $vatKey = (string)$item->getVat();
+            $grossPerVat[$vatKey] = ($grossPerVat[$vatKey] ?? 0.0)
+                + $item->getPriceGross() * $item->getQuantity();
+        }
+
+        $base = array_sum($grossPerVat);
+        if ($base <= 0.0) {
+            $this->logger->warning('Cannot split coupon - no positive product gross base', [
+                'orderNumber' => $order->getOrderNumber(),
+            ]);
+            return [];
+        }
+
+        $parts     = [];
+        $allocated = 0.0;
+        $rates     = array_keys($grossPerVat);
+        $lastRate  = end($rates);
+
+        foreach ($grossPerVat as $vat => $vatGross) {
+            if ($vat === $lastRate) {
+                // last bucket gets the remainder so the total stays exact
+                $share = round($totalGross - $allocated, 4);
+            } else {
+                $share = round($totalGross * ($vatGross / $base), 4);
+                $allocated += $share;
+            }
+            $parts[] = ['vat' => (float)$vat, 'discountGross' => $share];
+        }
+
+        return $parts;
     }
 
     /**
