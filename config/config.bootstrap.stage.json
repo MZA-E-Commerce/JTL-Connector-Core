@@ -47,7 +47,7 @@
   "coupons": {
     "enabled": false,
     "namePrefix": "Gutschein",
-    "sku": ""
+    "sku": "GUTSCHEIN"
   },
   "pimcore": {
     "api": {
