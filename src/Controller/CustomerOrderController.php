@@ -87,6 +87,13 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $order->addAttribute($attributeIdRegionalprovision);
                 }
 
+                if (!empty($orderData['versandart'])) {
+                    $attributeShippingMethod = new KeyValueAttribute();
+                    $attributeShippingMethod->setKey('Versandart');
+                    $attributeShippingMethod->setValue($orderData['versandart']);
+                    $order->addAttribute($attributeShippingMethod);
+                }
+
                 // Shipping address
                 $isPackstation = !empty($orderData['delivery']['locationName']) && !empty($orderData['delivery']['postNumber']);
                 $shippingAddress = new CustomerOrderShippingAddress();
