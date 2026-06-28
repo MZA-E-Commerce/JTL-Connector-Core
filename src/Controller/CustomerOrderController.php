@@ -102,7 +102,7 @@ class CustomerOrderController extends AbstractController implements PullInterfac
                     $shippingAddress->setFirstName(!empty($orderData['customer']['firstName']) ? $orderData['customer']['firstName'] : '');
                     $shippingAddress->setLastName(!empty($orderData['customer']['lastName']) ? $orderData['customer']['lastName'] : '');
                     $shippingAddress->setCompany(!empty($orderData['customer']['company']) ? $orderData['customer']['company'] : '');
-                    $shippingAddress->setStreet(!empty($orderData['delivery']['locationName']) ? $orderData['delivery']['locationName'] : '');
+                    $shippingAddress->setStreet((!empty($orderData['delivery']['streetForLabel']) ? $orderData['delivery']['streetForLabel'] : '') . (!empty($orderData['delivery']['streetNumberForLabel']) ? $orderData['delivery']['streetNumberForLabel'] : ''));
                     $shippingAddress->setExtraAddressLine(!empty($orderData['delivery']['postNumber']) ? $orderData['delivery']['postNumber'] : '');
                     $shippingAddress->setZipCode(!empty($orderData['delivery']['zip']) ? $orderData['delivery']['zip'] : '');
                     $shippingAddress->setCity(!empty($orderData['delivery']['city']) ? $orderData['delivery']['city'] : '');
