@@ -104,6 +104,9 @@ abstract class AbstractController
 
         $useBulk = $this->config->get('pimcore.api.useBulk', false);
 
+        // If enabled, products unknown to Pimcore are skipped instead of being created there.
+        $productCreationDisabled = $this->config->get('pimcore.api.productCreationDisabled', false) === true;
+
         if ($useBulk) {
 
             $pushStartTime = microtime(true);
@@ -163,7 +166,13 @@ abstract class AbstractController
                 count($newProducts)
             ));
 
-            if (!empty($newProducts)) {
+            if (!empty($newProducts) && $productCreationDisabled) {
+                $this->loggerService->get('bulk')->info(sprintf(
+                    'BULK Create skipped (pimcore.api.productCreationDisabled): %d product(s) not found in Pimcore: %s',
+                    count($newProducts),
+                    implode(', ', array_map(fn(Product $p) => $p->getSku(), $newProducts))
+                ));
+            } elseif (!empty($newProducts)) {
                 try {
                     $t0 = microtime(true);
                     $this->bulkCreatePimcoreProducts($newProducts);
@@ -225,6 +234,10 @@ abstract class AbstractController
                 try {
                     $pimcoreId = $this->getPimcoreId($model->getSku());
                 } catch (\Throwable $e) {
+                    if ($productCreationDisabled) {
+                        $this->loggerService->get('pimcore')->info('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage() . '. Product creation is disabled (pimcore.api.productCreationDisabled), skipping.');
+                        continue;
+                    }
                     $this->loggerService->get('pimcore')->error('Error fetching Pimcore ID for SKU ' . $model->getSku() . ': ' . $e->getMessage() . '. Try to create a new product in Pimcore.');
                     try {
                         $this->createPimcoreProduct($model);
