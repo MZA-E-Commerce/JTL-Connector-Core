@@ -54,6 +54,7 @@
     "api": {
       "useBulk": true,
       "specialPriceUpdateDisabled": false,
+      "productCreationDisabled": true,
       "url": "http://mza2-nginx/api/jtl/connector",
       "key": "xxx",
       "auth": {
